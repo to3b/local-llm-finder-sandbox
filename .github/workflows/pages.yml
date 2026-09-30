@@ -61,6 +61,22 @@ jobs:
       - name: Run sandbox first-paint and interaction smoke checks
         run: node sandbox/scripts/check-sandbox.mjs site
 
+      - name: Install browser smoke dependency
+        run: python3 -m pip install --quiet 'selenium>=4.20,<5'
+
+      - name: Run real-browser interaction regression
+        run: |
+          mkdir -p runtime-root
+          ln -sfn "$PWD/site" runtime-root/local-llm-finder-sandbox
+          python3 -m http.server 4173 --directory runtime-root >/tmp/local-llm-sandbox-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID' EXIT
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/local-llm-finder-sandbox/ >/dev/null; then break; fi
+            sleep 0.2
+          done
+          python3 sandbox/scripts/browser-smoke.py http://127.0.0.1:4173/local-llm-finder-sandbox/
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
