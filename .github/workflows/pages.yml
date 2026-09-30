@@ -41,9 +41,12 @@ jobs:
         with:
           node-version: 20
 
-      - name: Run production regression suite against sandbox
+      - name: Run production regression suite against sandbox baseline
         working-directory: site
         run: npm test
+
+      - name: Apply build-time sandbox refinement
+        run: node sandbox/scripts/prepare-sandbox.mjs site
 
       - name: Prepare isolated staging build
         run: |
@@ -54,6 +57,9 @@ jobs:
             -e 's/content="index,follow,max-image-preview:large"/content="noindex,nofollow"/g' \
             -e 's|href="/"|href="/local-llm-finder-sandbox/"|g'
           touch site/.nojekyll
+
+      - name: Run sandbox first-paint and interaction smoke checks
+        run: node sandbox/scripts/check-sandbox.mjs site
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
