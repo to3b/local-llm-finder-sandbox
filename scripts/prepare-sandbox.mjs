@@ -81,6 +81,22 @@ for (const rel of ['index.html', 'dist/index.html']) {
   html = html.replace('Includes prompt, pasted text and reply.', 'How much text the estimate should account for, including prompt, pasted text and reply.');
   html = html.replace('<small class="tier-label">Power user</small>Model controls', '<small class="tier-label">Model filters</small>Model controls');
 
+  // The sandbox mutates these modules at build time, so every deployment gets a fresh URL.
+  html = html.replaceAll('./app.js?v=20260929e', `./app.js?v=sandbox-${version}`);
+  html = html.replaceAll('./journeys.js?v=20260929e', `./journeys.js?v=sandbox-${version}`);
+  html = html.replaceAll('./copy-tune.js?v=20260929a', `./copy-tune.js?v=sandbox-${version}`);
+
+  // The production snapshot preloads journeys.js but does not execute it directly.
+  // Explicit execution makes Find / Improve / Upgrade deterministic on a clean sandbox origin.
+  if (!html.includes('src="./journeys.js')) {
+    html = replaceRequired(
+      html,
+      `<script type="module" src="./app.js?v=sandbox-${version}"></script><script type="module" src="./copy-tune.js?v=sandbox-${version}"></script>`,
+      `<script type="module" src="./app.js?v=sandbox-${version}"></script><script type="module" src="./journeys.js?v=sandbox-${version}"></script><script type="module" src="./copy-tune.js?v=sandbox-${version}"></script>`,
+      `${rel} journey module execution`
+    );
+  }
+
   write(rel, html);
 }
 
@@ -119,6 +135,7 @@ journeys = journeys.replaceAll('<div class="journey-options">', '<div class="jou
 journeys = journeys.replace('class="journey-option" data-journey="find" aria-pressed="true"', 'class="journey-option" data-journey="find" role="tab" aria-pressed="true" aria-selected="true"');
 journeys = journeys.replace('class="journey-option" data-journey="improve" aria-pressed="false"', 'class="journey-option" data-journey="improve" role="tab" aria-pressed="false" aria-selected="false"');
 journeys = journeys.replace('class="journey-option" data-journey="upgrade" aria-pressed="false"', 'class="journey-option" data-journey="upgrade" role="tab" aria-pressed="false" aria-selected="false"');
+journeys = journeys.replaceAll("new URL('/', location.origin)", "new URL('/local-llm-finder-sandbox/', location.origin)");
 journeys = journeys.replaceAll("'Needs exact GPU'", "'Select your GPU to estimate speed'");
 journeys = journeys.replaceAll('<dt>Context</dt>', '<dt>Model context limit</dt>');
 journeys = journeys.replace('<span class="results-note">Capacity estimate</span>', '<span class="results-note">Capacity comparison</span>');
