@@ -1,0 +1,75 @@
+name: Sandbox Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: sandbox-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sandbox controls
+        uses: actions/checkout@v4
+        with:
+          path: sandbox
+
+      - name: Checkout known-good production snapshot
+        uses: actions/checkout@v4
+        with:
+          repository: to3b/local-llm-finder
+          ref: 9eaad0eb611760802093bc52983adb8927785fad
+          path: site
+
+      - name: Apply sandbox overrides
+        run: |
+          if [ -d sandbox/overrides ]; then
+            rsync -a --exclude 'README.md' sandbox/overrides/ site/
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run production regression suite against sandbox
+        working-directory: site
+        run: npm test
+
+      - name: Prepare isolated staging build
+        run: |
+          rm -f site/CNAME site/sitemap.xml site/dist/sitemap.xml
+          printf 'User-agent: *\nDisallow: /\n' > site/robots.txt
+          printf 'User-agent: *\nDisallow: /\n' > site/dist/robots.txt
+          find site -type f -name '*.html' -print0 | xargs -0 sed -i \
+            -e 's/content="index,follow,max-image-preview:large"/content="noindex,nofollow"/g' \
+            -e 's|href="/"|href="/local-llm-finder-sandbox/"|g'
+          touch site/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
