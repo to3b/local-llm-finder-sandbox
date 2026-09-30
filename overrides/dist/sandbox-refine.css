@@ -1,0 +1,267 @@
+:root {
+  --page: #151719;
+  --surface: #202326;
+  --surface-raised: #292d31;
+  --line: #3b4147;
+  --line-strong: #59626b;
+  --text: #f3f4ef;
+  --muted: #bcc2c7;
+  --quiet: #929aa1;
+  --selection: #9cbfff;
+  --accent: #9cbfff;
+  --fit: #8fd6a8;
+  --caution: #e8bd72;
+}
+
+body {
+  font-size: 16px;
+  background-color: var(--page);
+  background-image: radial-gradient(ellipse at 50% -8%, rgba(156, 191, 255, .075), transparent 42%);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.app-shell {
+  width: min(100%, 900px);
+}
+
+.hero {
+  padding-top: 32px;
+  padding-bottom: 22px;
+}
+
+.hero h1 {
+  max-width: 720px;
+  font-size: clamp(2.25rem, 5vw, 2.75rem);
+  line-height: 1.04;
+}
+
+.hero > p {
+  max-width: 720px;
+}
+
+.site-nav a[aria-current="page"] {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 6px;
+}
+
+.journey-nav {
+  margin-top: 2px;
+}
+
+.journey-option,
+.device-choices label > span,
+.task-choices label > span,
+.memory-choices label > span,
+.priority-step,
+.advanced > summary,
+.secondary-button,
+.text-control,
+.device-input > select,
+.device-input > input,
+.field input,
+.field select,
+.gpu-entry select,
+.gpu-search input {
+  min-height: 44px;
+}
+
+.journey-option[aria-pressed="true"],
+.priority-step[aria-pressed="true"],
+.device-choices input:checked + span,
+.task-choices input:checked + span,
+.memory-choices input:checked + span {
+  color: var(--text);
+  border-color: var(--accent);
+  background: #27384a;
+  box-shadow: inset 3px 0 0 var(--accent), inset 0 0 0 1px rgba(156, 191, 255, .10);
+  font-weight: 620;
+}
+
+.journey-option[aria-pressed="true"]::after,
+.priority-step[aria-pressed="true"]::after {
+  content: '';
+  display: block;
+  width: 18px;
+  height: 2px;
+  margin: 5px auto 0;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.device-choices label:hover > span,
+.task-choices label:hover > span,
+.memory-choices label:hover > span,
+.priority-step:hover,
+.journey-option:hover {
+  border-color: #7d8994;
+  background-color: var(--surface-raised);
+}
+
+.device-choices input:focus-visible + span,
+.task-choices input:focus-visible + span,
+.memory-choices input:focus-visible + span {
+  outline-color: var(--accent);
+}
+
+.stage-section {
+  margin: 12px 0;
+  padding: 20px 20px 22px;
+  border-color: var(--line);
+  border-radius: 10px;
+  background: rgba(32, 35, 38, .82);
+}
+
+.stage-index {
+  border-color: var(--line-strong);
+  background: var(--surface-raised);
+  color: var(--text) !important;
+}
+
+.priority-steps {
+  border-color: var(--line-strong);
+  background: var(--surface);
+}
+
+.priority-step {
+  border-right-color: var(--line-strong);
+  color: var(--muted);
+}
+
+.results-heading h2,
+.content-section h2 {
+  font-size: clamp(1.35rem, 3vw, 1.65rem);
+}
+
+.model-row > summary {
+  min-height: 88px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.model-row > summary:hover {
+  background: var(--surface);
+}
+
+.model-title small,
+.results-heading p,
+.field-help,
+.journey-caveat {
+  color: var(--muted);
+}
+
+.metric strong,
+.detail-grid strong,
+.delta-strip strong,
+.milestone-meta strong,
+.decision-card dd,
+.results-note {
+  font-variant-numeric: tabular-nums;
+}
+
+.metric > span,
+.detail-label,
+.decision-card dt {
+  color: #aeb5bb;
+}
+
+.match-list > .model-row.top-choice {
+  border-color: rgba(156, 191, 255, .58);
+  background: rgba(35, 43, 51, .88);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.top-choice-badge {
+  max-width: 100%;
+  border-color: rgba(156, 191, 255, .7);
+  background: #27384a;
+  color: var(--text);
+  letter-spacing: .02em;
+  text-transform: none;
+}
+
+.model-details {
+  color: #d0d5d8;
+}
+
+.estimate-context {
+  margin-top: -6px !important;
+  padding: 9px 11px;
+  border-left: 2px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  background: rgba(156, 191, 255, .055);
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+.model-details .ram-warning,
+.decision-warning {
+  color: var(--caution);
+}
+
+.model-links a,
+.content-section a,
+.homepage-trust a,
+.doc-content a {
+  color: var(--accent);
+}
+
+.decision-card,
+.upgrade-milestone,
+.decision-summary {
+  border-color: var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.decision-card,
+.upgrade-milestone {
+  padding: 20px;
+}
+
+.upgrade-milestone .milestone-meta,
+.delta-strip {
+  font-variant-numeric: tabular-nums;
+}
+
+.content-section {
+  padding: 22px;
+  border-color: var(--line);
+  border-radius: 10px;
+  background: rgba(32, 35, 38, .72);
+}
+
+@media (min-width: 960px) {
+  .hero {
+    padding-top: 28px;
+  }
+}
+
+@media (max-width: 600px) {
+  body {
+    font-size: 16px;
+  }
+
+  .app-shell {
+    padding-inline: 16px;
+  }
+
+  .hero {
+    padding-top: 26px;
+  }
+
+  .stage-section,
+  .content-section {
+    padding: 16px;
+  }
+
+  .priority-step {
+    min-height: 46px;
+    font-size: .68rem;
+  }
+}
