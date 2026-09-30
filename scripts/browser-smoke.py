@@ -32,10 +32,13 @@ try:
     driver.get(url)
     wait.until(lambda d: d.find_elements(By.ID, 'finder-form'))
     wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, '.journey-option')) == 3)
+    wait.until(lambda d: len(d.find_elements(By.ID, 'improve-results')) == 1 and len(d.find_elements(By.ID, 'upgrade-results')) == 1)
 
     assert len(driver.find_elements(By.CSS_SELECTOR, '.journey-nav')) == 1
     assert len(driver.find_elements(By.CSS_SELECTOR, '.priority-step')) == 5
     assert len(driver.find_elements(By.CSS_SELECTOR, '.stage-index')) == 3
+    assert len(driver.find_elements(By.ID, 'improve-results')) == 1
+    assert len(driver.find_elements(By.ID, 'upgrade-results')) == 1
 
     # The five-position control must be interactive, not only painted in static HTML.
     for value in [1, 5, 2, 4, 3, 1, 3]:
@@ -86,6 +89,7 @@ try:
     wait.until(lambda d: visible('#improve-results'))
     assert not visible('#results')
     assert improve.get_attribute('aria-selected') == 'true'
+    assert len(driver.find_elements(By.ID, 'improve-results')) == 1
 
     current = driver.find_element(By.ID, 'current-model')
     current.clear()
@@ -99,13 +103,14 @@ try:
     wait.until(lambda d: len(d.find_element(By.ID, 'upgrade-content').text.strip()) > 0)
     assert not visible('#improve-results')
     assert upgrade.get_attribute('aria-selected') == 'true'
+    assert len(driver.find_elements(By.ID, 'upgrade-results')) == 1
 
     find = driver.find_element(By.CSS_SELECTOR, '[data-journey="find"]')
     find.click()
     wait.until(lambda d: visible('#results'))
     assert find.get_attribute('aria-selected') == 'true'
 
-    # Rapid interactions should settle, stay responsive and never duplicate enhanced controls.
+    # Rapid interactions should settle, stay responsive and never duplicate enhanced controls or journey views.
     started = time.monotonic()
     for _ in range(4):
         for value in [1, 2, 3, 4, 5, 3]:
@@ -117,6 +122,8 @@ try:
     assert elapsed < 8, f'Interaction burst took too long: {elapsed:.2f}s'
     assert len(driver.find_elements(By.CSS_SELECTOR, '.journey-nav')) == 1
     assert len(driver.find_elements(By.CSS_SELECTOR, '.priority-step')) == 5
+    assert len(driver.find_elements(By.ID, 'improve-results')) == 1
+    assert len(driver.find_elements(By.ID, 'upgrade-results')) == 1
     assert len(driver.find_elements(By.CSS_SELECTOR, '#results-content .top-choice .why-top-match')) >= 1
 
     # Result expansion should still work after the interaction burst.
@@ -142,6 +149,6 @@ try:
             severe.append(message)
     assert not severe, 'Browser console errors: ' + ' | '.join(severe)
 
-    print('Headless browser smoke test passed: first-paint controls, consistent selection states, top-match rationale, rapid interactions, journeys, expansion and sandbox URLs are stable.')
+    print('Headless browser smoke test passed: single journey views, first-paint controls, consistent selection states, top-match rationale, rapid interactions, expansion and sandbox URLs are stable.')
 finally:
     driver.quit()
