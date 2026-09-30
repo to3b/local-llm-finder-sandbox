@@ -26,6 +26,8 @@ for (const [name, html] of [['root', rootHtml], ['dist', distHtml]]) {
 
 assert.ok(app.includes("new URL('/local-llm-finder-sandbox/', window.location.origin)"), 'sandbox share links must stay inside the sandbox');
 assert.ok(app.includes('Top match for your settings'), 'top recommendation copy must be calibrated');
+assert.ok(app.includes('Why this match'), 'top recommendations must explain the ranking in the collapsed card');
+assert.ok(app.includes('ranks highest for ${preferenceLabel} priority'), 'top rationale must connect to the selected speed/quality preference');
 assert.ok(app.includes('Context used for this estimate'), 'expanded results must expose estimate context');
 assert.ok(app.includes('Model context limit'), 'expanded results must distinguish model context limit');
 assert.ok(app.includes('Select your GPU to estimate speed'), 'unknown speed copy must state the next action');
@@ -41,8 +43,11 @@ assert.ok(copyTune.includes("steps.dataset.priorityClick = 'true'"), 'pre-render
 assert.ok(!copyTune.includes('watchGeneratedCopy'), 'sandbox must not use generated-result mutation watching');
 assert.ok(!copyTune.includes('tuneGeneratedCopy'), 'sandbox must not rewrite live results after render');
 
-assert.ok(css.includes('--accent: #9cbfff'), 'sandbox style layer must use the restrained blue accent');
-assert.ok(css.includes('box-shadow: inset 3px 0 0 var(--accent)'), 'selected controls need a non-colour state marker');
+assert.ok(css.includes('--accent: #9cbfff'), 'sandbox must keep blue available for focus and links');
+assert.ok(css.includes('--selected-bg: #303438'), 'selected controls must use the shared neutral selected surface');
+assert.ok(css.includes('box-shadow: inset 0 -2px 0 var(--selected-mark)'), 'selected controls need one consistent non-fill marker');
+assert.ok(!css.includes('background: #27384a'), 'selected buttons must not revert to the previous blue fill');
+assert.ok(css.includes('.why-top-match'), 'top-match rationale must have a restrained shared style');
 assert.ok(css.includes('font-variant-numeric: tabular-nums'), 'comparison numbers should use tabular numerals');
 assert.ok(css.includes('min-height: 44px'), 'primary controls should meet the touch-target target');
 
