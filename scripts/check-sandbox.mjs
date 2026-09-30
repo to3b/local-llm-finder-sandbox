@@ -7,6 +7,7 @@ const read = rel => fs.readFileSync(path.join(root, rel), 'utf8');
 const rootHtml = read('index.html');
 const distHtml = read('dist/index.html');
 const app = read('dist/app.js');
+const recommend = read('dist/recommend.js');
 const journeys = read('dist/journeys.js');
 const copyTune = read('dist/copy-tune.js');
 const css = read('dist/sandbox-refine.css');
@@ -19,7 +20,8 @@ for (const [name, html] of [['root', rootHtml], ['dist', distHtml]]) {
   assert.ok(html.includes('Model filters'), `${name} must use the model-filter label at first paint`);
   assert.ok(html.includes('aria-current="page"'), `${name} must expose the active Finder navigation state`);
   assert.ok(html.includes('sandbox-refine.css'), `${name} must load the sandbox refinement layer`);
-  assert.equal((html.match(/src="\.\/journeys\.js\?v=sandbox-/g) || []).length, 1, `${name} must explicitly execute the journey module once`);
+  assert.equal((html.match(/src="\.\/journeys\.js/g) || []).length, 0, `${name} must not execute journeys.js through a second script URL`);
+  assert.equal((html.match(/href="\.\/journeys\.js\?v=sandbox-/g) || []).length, 1, `${name} should preload the same sandbox journey URL used by recommend.js`);
   assert.ok(html.includes('app.js?v=sandbox-'), `${name} must cache-bust the build-time modified app module`);
   assert.ok(html.includes('copy-tune.js?v=sandbox-'), `${name} must cache-bust the build-time modified enhancement module`);
 }
@@ -33,7 +35,11 @@ assert.ok(app.includes('Model context limit'), 'expanded results must distinguis
 assert.ok(app.includes('Select your GPU to estimate speed'), 'unknown speed copy must state the next action');
 assert.ok(app.includes('fit · ${parameterText'), 'collapsed rows must expose a task-fit reason');
 
+assert.match(recommend, /import\('\.\/journeys\.js\?v=sandbox-[^']+'\)/, 'recommend.js must be the single cache-busted journey execution path');
+assert.ok(!recommend.includes("import('./journeys.js?v=20260929e')"), 'recommend.js must not retain the stale production journey URL');
+
 assert.ok(journeys.includes("if (!document.querySelector('.journey-nav'))"), 'journey code must not duplicate the static selector');
+assert.ok(journeys.includes("if (!document.querySelector('#improve-results') && !document.querySelector('#upgrade-results'))"), 'journey code must guard against duplicate comparison result sections');
 assert.ok(journeys.includes("b.setAttribute('aria-selected'"), 'journey tabs must synchronize aria-selected');
 assert.ok(journeys.includes("new URL('/local-llm-finder-sandbox/', location.origin)"), 'journey hashes must stay inside the sandbox');
 assert.ok(journeys.includes('Capacity comparison'), 'upgrade view must identify itself as a capacity comparison');
