@@ -52,6 +52,23 @@ try:
     js_click(coding)
     wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, '#results-content .model-row')) > 0)
 
+    # Selected states should use one visual language across journey, priority, hardware and task controls.
+    selected_backgrounds = driver.execute_script("""
+      return [
+        '[data-journey="find"][aria-pressed="true"]',
+        '.priority-step[aria-pressed="true"]',
+        'input[name="device"]:checked + span',
+        'input[name="primaryUse"]:checked + span'
+      ].map(selector => getComputedStyle(document.querySelector(selector)).backgroundColor);
+    """)
+    assert len(set(selected_backgrounds)) == 1, f'Inconsistent selected-control backgrounds: {selected_backgrounds}'
+
+    # The top recommendation should explain itself without requiring expansion.
+    top_reason = wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '#results-content .top-choice .why-top-match'))
+    assert 'Why this match' in top_reason.text
+    assert 'coding fit' in top_reason.text
+    assert 'ranks highest for Balanced priority' in top_reason.text
+
     # Advanced and model-filter controls should open without changing the journey or duplicating UI.
     advanced = driver.find_element(By.CSS_SELECTOR, '#advanced-settings > summary')
     advanced.click()
@@ -100,6 +117,7 @@ try:
     assert elapsed < 8, f'Interaction burst took too long: {elapsed:.2f}s'
     assert len(driver.find_elements(By.CSS_SELECTOR, '.journey-nav')) == 1
     assert len(driver.find_elements(By.CSS_SELECTOR, '.priority-step')) == 5
+    assert len(driver.find_elements(By.CSS_SELECTOR, '#results-content .top-choice .why-top-match')) >= 1
 
     # Result expansion should still work after the interaction burst.
     first_row = driver.find_element(By.CSS_SELECTOR, '#results-content .model-row')
@@ -124,6 +142,6 @@ try:
             severe.append(message)
     assert not severe, 'Browser console errors: ' + ' | '.join(severe)
 
-    print('Headless browser smoke test passed: first-paint controls, rapid interactions, journeys, expansion and sandbox URLs are stable.')
+    print('Headless browser smoke test passed: first-paint controls, consistent selection states, top-match rationale, rapid interactions, journeys, expansion and sandbox URLs are stable.')
 finally:
     driver.quit()
