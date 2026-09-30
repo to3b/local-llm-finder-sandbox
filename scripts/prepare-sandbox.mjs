@@ -81,21 +81,11 @@ for (const rel of ['index.html', 'dist/index.html']) {
   html = html.replace('Includes prompt, pasted text and reply.', 'How much text the estimate should account for, including prompt, pasted text and reply.');
   html = html.replace('<small class="tier-label">Power user</small>Model controls', '<small class="tier-label">Model filters</small>Model controls');
 
-  // The sandbox mutates these modules at build time, so every deployment gets a fresh URL.
+  // Every build-time modified module gets a fresh URL. journeys.js is executed by recommend.js;
+  // keeping it as a preload here is enough and avoids evaluating it through a second URL.
   html = html.replaceAll('./app.js?v=20260929e', `./app.js?v=sandbox-${version}`);
   html = html.replaceAll('./journeys.js?v=20260929e', `./journeys.js?v=sandbox-${version}`);
   html = html.replaceAll('./copy-tune.js?v=20260929a', `./copy-tune.js?v=sandbox-${version}`);
-
-  // The production snapshot preloads journeys.js but does not execute it directly.
-  // Explicit execution makes Find / Improve / Upgrade deterministic on a clean sandbox origin.
-  if (!html.includes('src="./journeys.js')) {
-    html = replaceRequired(
-      html,
-      `<script type="module" src="./app.js?v=sandbox-${version}"></script><script type="module" src="./copy-tune.js?v=sandbox-${version}"></script>`,
-      `<script type="module" src="./app.js?v=sandbox-${version}"></script><script type="module" src="./journeys.js?v=sandbox-${version}"></script><script type="module" src="./copy-tune.js?v=sandbox-${version}"></script>`,
-      `${rel} journey module execution`
-    );
-  }
 
   write(rel, html);
 }
@@ -136,12 +126,29 @@ app = replaceRequired(
 );
 write('dist/app.js', app);
 
+// recommend.js is the canonical browser entry point for journeys.js. Cache-bust that dynamic import
+// so it resolves to the exact same URL as the preload and executes only once per document.
+let recommend = read('dist/recommend.js');
+recommend = replaceRequired(
+  recommend,
+  "import('./journeys.js?v=20260929e');",
+  `import('./journeys.js?v=sandbox-${version}');`,
+  'journey dynamic import cache bust'
+);
+write('dist/recommend.js', recommend);
+
 let journeys = read('dist/journeys.js');
 journeys = replaceRequired(
   journeys,
   "hero.insertAdjacentHTML('afterend',",
   "if (!document.querySelector('.journey-nav')) hero.insertAdjacentHTML('afterend',",
   'journey static-nav guard'
+);
+journeys = replaceRequired(
+  journeys,
+  "findView.insertAdjacentHTML('afterend',",
+  "if (!document.querySelector('#improve-results') && !document.querySelector('#upgrade-results')) findView.insertAdjacentHTML('afterend',",
+  'journey result-view duplicate guard'
 );
 journeys = journeys.replaceAll('<div class="journey-options">', '<div class="journey-options" role="tablist" aria-label="Finder mode">');
 journeys = journeys.replace('class="journey-option" data-journey="find" aria-pressed="true"', 'class="journey-option" data-journey="find" role="tab" aria-pressed="true" aria-selected="true"');
