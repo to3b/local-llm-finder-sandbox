@@ -122,6 +122,18 @@ app = replaceRequired(
   '<small>${fitLabel(quality)} ${taskShortNames[primaryUse]} fit · ${parameterText(model.parametersB)} parameters · ${quant.name}${slower ? \' · Below speed target\' : unknown ? \' · Speed not estimated\' : \'\'}</small>',
   'collapsed result reason'
 );
+app = replaceRequired(
+  app,
+  "  const speedText = unknown ? 'Exact-device speed is not estimated for this setup.' : slower ? `Estimated speed is below your ${fmt(hardware.minSpeed)} tokens/second minimum.` : `Estimated speed meets your ${fmt(hardware.minSpeed)} tokens/second minimum.`;",
+  "  const speedText = unknown ? 'Exact-device speed is not estimated for this setup.' : slower ? `Estimated speed is below your ${fmt(hardware.minSpeed)} tokens/second minimum.` : `Estimated speed meets your ${fmt(hardware.minSpeed)} tokens/second minimum.`;\n  const memoryContext = hardware.mode === 'gpu' ? `${fmt(requiredGB)} GB estimated with ${fmt(hardware.vramGB)} GB graphics memory` : hardware.mode === 'mac' ? `${fmt(requiredGB)} GB estimated with ${fmt(hardware.ramGB)} GB unified memory` : `${fmt(requiredGB)} GB estimated with ${fmt(hardware.ramGB)} GB RAM`;\n  const preferenceLabel = preferenceNames[Number(priorityInput.value) - 1] || 'Balanced';\n  const whyTop = isTop ? `<span class=\"why-top-match\"><strong>Why this match</strong><span>${fitLabel(quality)} ${taskShortNames[primaryUse]} fit · ${memoryContext} · ranks highest for ${preferenceLabel} priority</span></span>` : '';",
+  'top-match rationale data'
+);
+app = replaceRequired(
+  app,
+  '<span class="chevron" aria-hidden="true"></span></summary>',
+  '<span class="chevron" aria-hidden="true"></span>${whyTop}</summary>',
+  'top-match rationale placement'
+);
 write('dist/app.js', app);
 
 let journeys = read('dist/journeys.js');
