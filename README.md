@@ -46,3 +46,11 @@ export and release procedure. The live domains are unchanged by sandbox commits.
 Knowledge previews now build from the same content Sheet as production and refresh at minutes 17 and 47 each hour. The initial catalogue is fully covered by 280 available pages, including 274 drafts. Use the Drafts filter and Edit this draft links to review pages in the Sheet.
 
 The offline content snapshot is retained for reproducibility. The workflow uses a pinned generator and current Sheet rows; Published/Draft status changes are reflected on the next successful build. All sandbox HTML uses noindex/nofollow. Crawlers can read those tags, and no sandbox sitemap is deployed.
+
+## Community tests — awaiting approval
+
+The [Share a test page](https://to3b.github.io/local-llm-finder-sandbox/tests/) needs only hardware, model and outcome. No account/email is required. Finder links prefill known hardware and model; speed, settings and notes stay optional. Pasted/imported output is parsed in the browser, with raw logs/prompts/replies omitted from the saved report. Failed writes preserve input for retry.
+
+Reports are stored by a separate sandbox service at `https://localllm-tests-sandbox.to3b.chatgpt.site`. Its Owner review link uses Sign in with ChatGPT for the site owner. Reports appear in Reviewed results only after approval. There are no invented benchmark results. The optional Python/Ollama helper runs five repeatable local measurements, saves a file, and never uploads automatically.
+
+Only reviewed, explicitly selected and complete GPU measurements can be exported as calibration candidates. Generation speed does not measure answer quality, sparse evidence stays labelled, and candidates never alter rankings automatically. The production exporter intentionally omits this addition. See [PROMOTION.md](PROMOTION.md) before any production release.

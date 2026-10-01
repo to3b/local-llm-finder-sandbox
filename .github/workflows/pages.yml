@@ -87,6 +87,7 @@ jobs:
         run: |
           node sandbox/scripts/check-sandbox.mjs site
           node sandbox/scripts/check-draft-pages.mjs site
+          node sandbox/scripts/test-community.mjs
 
       - name: Install browser smoke dependency
         run: python3 -m pip install --quiet 'selenium>=4.20,<5'
@@ -103,6 +104,7 @@ jobs:
             sleep 0.2
           done
           python3 sandbox/scripts/browser-smoke.py http://127.0.0.1:4173/local-llm-finder-sandbox/
+          python3 sandbox/scripts/community-browser-smoke.py http://127.0.0.1:4173/local-llm-finder-sandbox/
 
       - name: Upload browser evidence
         if: always()
