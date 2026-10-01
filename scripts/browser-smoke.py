@@ -178,6 +178,9 @@ try:
         assert driver.execute_script("return getComputedStyle(document.body).backgroundImage") == 'none'
         assert driver.execute_script("return getComputedStyle(document.querySelector('.metric.speed')).display") != 'none'
         driver.save_screenshot(f'browser-evidence/finder-{width}.png')
+        driver.execute_script('window.scrollTo(0, document.body.scrollHeight)')
+        driver.save_screenshot(f'browser-evidence/finder-footer-{width}.png')
+        driver.execute_script('window.scrollTo(0, 0)')
         # All three journeys remain usable and mutually exclusive at every width.
         for mode in ['improve', 'upgrade', 'find']:
             driver.find_element(By.CSS_SELECTOR, f'[data-journey="{mode}"]').click()
