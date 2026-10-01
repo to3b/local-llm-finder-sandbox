@@ -64,5 +64,5 @@ assert.equal(speedAvailability({mode:'unsure'}), 'CPU speed not estimated');
 assert.equal(speedAvailability({mode:'gpu'}), 'Choose a graphics card for speed estimates');
 assert.equal(speedAvailability({mode:'gpu',customMemory:true}), 'Speed disabled by memory override');
 assert.ok(!app.includes('tok/s · rough'), 'speed qualifications must not repeat per metric');
-assert.ok(rootHtml.includes('class="example-table"'), 'worked example must provide aligned measurements');
+assert.ok(!rootHtml.includes('example-heading'), 'removed worked example must stay absent');
 assert.ok(!rootHtml.includes('class="knowledge-grid"'), 'unpublished reference topics must not dominate the Finder');

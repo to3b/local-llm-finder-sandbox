@@ -1,9 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 const root = path.resolve(process.argv[2] || 'site');
-const { recommend } = await import(pathToFileURL(path.join(root, 'dist/recommend.js')));
-const { GPUs } = await import(pathToFileURL(path.join(root, 'dist/data.js')));
 const basePath = process.env.SITE_BASE || '/local-llm-finder-sandbox/';
 const read = rel => fs.readFileSync(path.join(root, rel), 'utf8');
 const write = (rel, value) => fs.writeFileSync(path.join(root, rel), value);
@@ -60,17 +57,10 @@ journeys = replace(journeys, "buttons.forEach(b => b.addEventListener('click', (
 journeys = journeys.replaceAll(/<span class="decision-kicker">[^<]*<\/span>/g, '');
 write('dist/journeys.js', journeys);
 
-// Generate the static example from the actual bundled recommendation engine.
-const gpu = GPUs.find(x => x.id === 'rtx-3060');
-const sample = recommend({hardware:{mode:'gpu',vramGB:12,ramGB:32,bandwidthGBs:gpu.bandwidthGBs,speedKnown:true},useCases:['coding'],primaryUse:'coding',preference:3,minSpeed:1,contextK:8,quantization:'auto',maxWeightsGB:null,family:null}).matches.slice(0,3);
-const fmt = n => Number.isInteger(n) ? String(n) : n.toFixed(1);
-const exampleHash = new URLSearchParams({d:'gpu',g:gpu.id,t:'coding',p:'3',c:'8',r:'32',s:'1'});
-const table = `<div class="example-table-wrap"><table class="example-table"><caption>Bundled catalogue example · estimated memory and speed</caption><thead><tr><th scope="col">Rank</th><th scope="col">Model</th><th scope="col">Quantization</th><th scope="col">Memory</th><th scope="col">Speed</th></tr></thead><tbody>${sample.map((item,i)=>`<tr><td>${i+1}</td><th scope="row">${item.model.name}</th><td>${item.quant.name}</td><td>${fmt(item.requiredGB)} GB</td><td>${item.speedLow}–${item.speedHigh} tok/s</td></tr>`).join('')}</tbody></table></div><a class="try-setup" href="${basePath}#${exampleHash}">Try this setup →</a>`;
 for (const rel of ['index.html','dist/index.html']) {
  let html = read(rel);
  html = html.replace(/<section class="content-section knowledge-preview"[\s\S]*?<\/section>/, '<aside class="knowledge-availability">Model and hardware references are in preparation. <a href="https://knowledge.localllmfinder.com/">Knowledge preview →</a></aside>');
- html = html.replace(/<div class="info-grid">[\s\S]*?<\/div>/, table);
- html = html.replace('the current September 2026 catalogue ranks these three highest.', 'the bundled September 2026 catalogue ranks these three highest. Live catalogue updates may change the shortlist.');
+ html = html.replace(/<section class="content-section" aria-labelledby="example-heading">[\s\S]*?<\/section>/, '');
  html = html.replace(' <a href="./methodology.html">Methodology</a> · <a href="./privacy.html">Privacy</a> · <a href="./terms.html">Terms</a></p>', ' <a href="./methodology.html">How estimates work</a></p>');
  // Move the utility action into the results heading without changing element IDs.
  const actions = html.match(/<div class="result-actions">[\s\S]*?<\/div>/)?.[0];
@@ -107,9 +97,11 @@ if (fs.existsSync(knowledgeRoot)) {
  }
 }
 
-// Preserve release checks against the new table and the configured deployment root.
+// Preserve release checks for the reduced homepage and configured deployment root.
 let release = read('tests/release.test.js');
-release = replace(release, 'const expected = `<article><span class="step-number">#${rank + 1}</span><h3>${item.model.name}</h3><p>${item.quant.name} · ${fmt(item.requiredGB)} GB estimated memory · ${item.speedLow}–${item.speedHigh} tok/s rough speed · ${fitLabel(item.quality)} coding fit.</p></article>`;', 'const expected = `<tr><td>${rank + 1}</td><th scope="row">${item.model.name}</th><td>${item.quant.name}</td><td>${fmt(item.requiredGB)} GB</td><td>${item.speedLow}–${item.speedHigh} tok/s</td></tr>`;');
+release = release.replace(/^.*must include the static worked example.*\n/m, "  assert.ok(!files[name].includes('example-heading'), `${name} must omit the removed worked example`);\n");
+release = release.replace(/\/\/ Keep the crawlable worked example[\s\S]*?(?=assert.ok\(files.journeys)/, '');
+release = release.replaceAll(' and worked-example checks', ' checks');
 if (fs.existsSync(knowledgeRoot)) release = release.replace("const knowledgeUrl = 'https://knowledge.localllmfinder.com/';", `const knowledgeUrl = '${basePath}knowledge-preview/';`);
 release = release.split('\n').map(line => line.startsWith('assert.match(files.app, /new URL') ? `assert.ok(files.app.includes('new URL(${JSON.stringify(basePath)}, window.location.origin)'), 'Share links must use the configured site root');` : line.startsWith('assert.match(files.journeys, /new URL') ? `assert.ok(files.journeys.includes('new URL(${JSON.stringify(basePath)}, location.origin)'), 'Journey links must use the configured site root');` : line).join('\n');
 write('tests/release.test.js', release);
