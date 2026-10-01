@@ -270,7 +270,9 @@ try:
             if any('/' + directory + '/' in page for directory in ['models', 'hardware', 'guides']):
                 assert driver.find_elements(By.CSS_SELECTOR, '.article-contents a')
                 assert driver.find_elements(By.CSS_SELECTOR, '.article-sources a')
-                assert driver.find_elements(By.XPATH, '//h2[text()="Related references"]')
+                assert driver.find_elements(By.CSS_SELECTOR, '.related-reading summary')
+                reading_links = [a.get_attribute('href') for a in driver.find_elements(By.CSS_SELECTOR, '.related-reading a')]
+                assert reading_links and len(reading_links) == len(set(reading_links))
                 if reference_status[page.removeprefix('knowledge-preview/').rstrip('/')] == 'Draft':
                     assert driver.find_elements(By.CSS_SELECTOR, '.draft-notice')
                     edit = driver.find_element(By.CSS_SELECTOR, '.draft-notice a')
