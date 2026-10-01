@@ -137,7 +137,7 @@ The GeForce RTX 3060 12 GB provides a useful capacity tier for local language-mo
 
 This article covers the desktop 12 GB version. [NVIDIA's specifications](https://www.nvidia.com/en-us/geforce/graphics-cards/30-series/rtx-3060-3060ti/) also list an 8 GB RTX 3060, with a different memory interface. The RTX 3060 Ti is another model and is listed with 8 GB. A shared “3060” name does not establish the same memory budget.
 
-Check the exact card in your system before choosing it in the Finder. The Finder's catalogue ID for the desktop 12 GB model is `rtx-3060`; the article URL includes “12gb” to make its scope clear.
+Check the exact card in your system before choosing it in the Finder. Select the desktop 12 GB model rather than the 8 GB or Ti variant.
 
 ## Which models are plausible candidates?
 
