@@ -34,11 +34,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: to3b/local-llm-finder-knowledge
-          ref: 67bc10bb74d77b8ea370968bdb9ed966d6e0a34b
+          ref: 73ecc8ff6130ec5de8434e782331586c51ef8b0a
           path: knowledge
 
-      - name: Apply the staged Finder-link fix
-        run: git -C knowledge apply ../sandbox/content/finder-links.patch
+      - name: Apply the staged public-draft generator
+        run: git -C knowledge apply ../sandbox/content/public-drafts.patch
 
       - name: Build the staged article snapshot
         working-directory: knowledge
@@ -48,7 +48,9 @@ jobs:
 
       - name: Test Knowledge relationships
         working-directory: knowledge
-        run: node tests/wiki.test.mjs
+        run: |
+          node tests/wiki.test.mjs
+          node tests/article-build.test.mjs
 
       - name: Apply sandbox overrides
         run: |
@@ -85,7 +87,9 @@ jobs:
           touch site/.nojekyll
 
       - name: Run sandbox first-paint and interaction smoke checks
-        run: node sandbox/scripts/check-sandbox.mjs site
+        run: |
+          node sandbox/scripts/check-sandbox.mjs site
+          node sandbox/scripts/check-draft-pages.mjs site
 
       - name: Install browser smoke dependency
         run: python3 -m pip install --quiet 'selenium>=4.20,<5'

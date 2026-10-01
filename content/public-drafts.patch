@@ -1,0 +1,313 @@
+diff --git a/scripts/build-articles.mjs b/scripts/build-articles.mjs
+index fb80432..8456e86 100644
+--- a/scripts/build-articles.mjs
++++ b/scripts/build-articles.mjs
+@@ -37,7 +37,7 @@ function parseCsv(text) {
+     else if (ch === ',') { row.push(cell); cell = ''; }
+     else if (ch === '\n') {
+       row.push(cell.replace(/\r$/, ''));
+-      if (row.some(value => value.trim() !== '')) rows.push(row);
++      rows.push(row);
+       row = [];
+       cell = '';
+     } else cell += ch;
+@@ -57,7 +57,7 @@ function recordsFromCsv(text) {
+   for (const column of REQUIRED) {
+     if (!headers.includes(column)) throw new Error(`Knowledge Articles is missing required column: ${column}`);
+   }
+-  return rows.slice(1).map(values => Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ''])));
++  return rows.slice(1).map((values, index) => ({...Object.fromEntries(headers.map((header, column) => [header, values[column] ?? ''])), '_Sheet Row': index + 2}));
+ }
+ 
+ function enabled(value) {
+@@ -154,14 +154,17 @@ function articlePath(row) {
+ 
+ function validateArticle(row) {
+   const { directory, slug } = articlePath(row);
+-  const requiredForPublish = ['Title', 'Summary', 'Body Markdown', 'Meta Title', 'Meta Description', 'Author', 'Date Published', 'Date Modified', 'Canonical URL'];
+-  for (const field of requiredForPublish) {
+-    if (!String(row[field] || '').trim()) throw new Error(`Published article ${slug} is missing ${field}.`);
++  const published = /^published$/i.test(String(row.Status).trim());
++  const required = ['Title', 'Summary', 'Body Markdown', 'Meta Title', 'Meta Description', 'Author', 'Date Modified', 'Canonical URL'];
++  if (published) required.push('Date Published');
++  for (const field of required) {
++    if (!String(row[field] || '').trim()) throw new Error(`Available article ${slug} is missing ${field}.`);
+   }
+   const expected = `${SITE_ORIGIN}/${directory}/${slug}/`;
+   const canonical = safeUrl(row['Canonical URL']);
+   if (canonical !== expected) throw new Error(`Canonical URL for ${slug} must be ${expected}`);
+   for (const field of ['Date Published', 'Date Modified']) {
++    if (!published && field === 'Date Published' && !String(row[field] || '').trim()) continue;
+     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(row[field]).trim())) throw new Error(`${field} for ${slug} must use YYYY-MM-DD.`);
+   }
+ }
+@@ -184,6 +187,9 @@ function renderArticle(row) {
+   const author = String(row.Author).trim();
+   const published = String(row['Date Published']).trim();
+   const modified = String(row['Date Modified']).trim();
++  const isPublished = /^published$/i.test(String(row.Status).trim());
++  const editUrl = `https://docs.google.com/spreadsheets/d/1IQvICIAWzzbTO_hTJMb-HxEYzyDQQmtvGXgY-np9Cbg/edit#gid=323200577&range=A${row['_Sheet Row']}:Q${row['_Sheet Row']}`;
++  const draftNotice = isPublished ? '' : `<aside class="draft-notice"><strong>Draft reference</strong><p>Catalogue details and planning guidance are awaiting source review.</p><a href="${esc(editUrl)}">Edit this draft</a></aside>`;
+   const sources = sourceList(row);
+   const body = markdownToHtml(row['Body Markdown']);
+   const sourcesHtml = sources.length ? `
+@@ -209,7 +215,7 @@ function renderArticle(row) {
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width,initial-scale=1">
+   <meta name="theme-color" content="#151719">
+-  <meta name="robots" content="index,follow">
++  <meta name="robots" content="${isPublished ? 'index' : 'noindex'},follow">
+   <meta name="description" content="${esc(metaDescription)}">
+   <link rel="canonical" href="${esc(canonical)}">
+   <title>${esc(metaTitle)}</title>
+@@ -227,7 +233,7 @@ function renderArticle(row) {
+     .article-body a,.article-sources a{color:#dddcd7;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
+     .article-body code{padding:2px 5px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:#dddcd7;font-size:.82em}
+   </style>
+-  <script type="application/ld+json">${structured}</script>
++  ${isPublished ? `<script type="application/ld+json">${structured}</script>` : ''}
+ <link rel="stylesheet" href="../../sandbox-refine.css?v=cleanup-2"></head>
+ <body>
+   <main class="docs-shell">
+@@ -245,7 +251,8 @@ function renderArticle(row) {
+         <p class="eyebrow">${esc(row.Type)} reference</p>
+         <h1>${esc(title)}</h1>
+         <p class="doc-lede">${esc(summary)}</p>
+-        <div class="doc-meta"><span class="doc-chip">Published</span><span>Updated ${esc(modified)}</span></div>
++        <div class="doc-meta"><span class="doc-chip">${isPublished ? 'Published' : 'Draft'}</span><span>Updated ${esc(modified)}</span></div>
++        ${draftNotice}
+       </header>
+       <div class="doc-body article-body">${body}</div>${sourcesHtml}
+       <div class="doc-actions"><a class="doc-button primary" href="https://localllmfinder.com/">Use the Finder</a><a class="doc-button secondary" href="/">Back to Knowledge</a></div>
+@@ -292,18 +299,19 @@ async function main() {
+   const csv = process.env.ARTICLES_CSV ? await readFile(process.env.ARTICLES_CSV, 'utf8') : await (async () => { const response = await fetch(sheetUrl(ARTICLES_GID), { redirect: 'follow' }); if (!response.ok) throw new Error(`Google Sheets returned HTTP ${response.status}.`); return response.text(); })();
+   const records = recordsFromCsv(csv);
+   const published = records.filter(row => enabled(row.Enabled) && /^published$/i.test(String(row.Status || '').trim()));
++  const available = records.filter(row => enabled(row.Enabled) && /^(published|draft)$/i.test(String(row.Status || '').trim()));
+ 
+   const seen = new Set();
+-  for (const row of published) {
++  for (const row of available) {
+     const { relative } = articlePath(row);
+-    if (seen.has(relative)) throw new Error(`Duplicate published article path: ${relative}`);
++    if (seen.has(relative)) throw new Error(`Duplicate available article path: ${relative}`);
+     seen.add(relative);
+     validateArticle(row);
+   }
+ 
+-  const references = registry(published);
++  const references = registry(available);
+   for (const directory of OWNED_DIRECTORIES) await rm(join(SITE_ROOT, directory), { recursive: true, force: true });
+-  for (const row of published) {
++  for (const row of available) {
+     const { relative } = articlePath(row);
+     await writeRelative(relative, enhanceArticle(renderArticle(row), row, references));
+   }
+@@ -311,7 +319,7 @@ async function main() {
+   await writeRelative('sitemap.xml', sitemapXml(published));
+   await writeRelative('references.json', JSON.stringify(references, null, 2) + '\n');
+   await writeRelative('index.html', renderIndex(references));
+-  console.log(`Built ${published.length} published Knowledge article(s).`);
++  console.log(`Built ${available.length} available Knowledge articles: ${published.length} published, ${available.length - published.length} drafts.`);
+ }
+ 
+ await main();
+diff --git a/scripts/wiki.mjs b/scripts/wiki.mjs
+index f2b6c00..eec5079 100644
+--- a/scripts/wiki.mjs
++++ b/scripts/wiki.mjs
+@@ -3,16 +3,17 @@ const dirs = {Model:'models', Hardware:'hardware', Guide:'guides'};
+ export const escape = v => String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+ const list = v => String(v || '').split(/[,\n]+/).map(x=>x.trim()).filter(Boolean);
+ export function registry(rows) {
+-  const articles = rows.map(r=>({key:`${dirs[r.Type]}/${r.Slug}`,type:r.Type,slug:r.Slug,title:r.Title,summary:r.Summary,url:r['Canonical URL'],entityIds:list(r['Entity IDs']),modified:r['Date Modified'],related:list(r['Related Articles']),body:r['Body Markdown']}));
++  const articles = rows.map(r=>({key:`${dirs[r.Type]}/${r.Slug}`,type:r.Type,slug:r.Slug,title:r.Title,summary:r.Summary,url:r['Canonical URL'],status:/^draft$/i.test(String(r.Status).trim())?'Draft':'Published',entityIds:list(r['Entity IDs']),modified:r['Date Modified'],related:list(r['Related Articles']),body:r['Body Markdown']}));
+   const keys = new Set(), ids = new Set();
+   for(const a of articles) {
+     if(!dirs[a.type] || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(a.slug) || a.url !== `${origin}/${a.key}/` || keys.has(a.key)) throw Error(`Invalid/duplicate reference: ${a.key}`);
+     keys.add(a.key);
+-    for(const id of a.entityIds) {const key=`${a.type}:${id}`; if(!/^[a-z0-9-]+$/.test(id)||ids.has(key)||a.type==='Guide') throw Error(`Invalid/duplicate Entity ID: ${key}`); ids.add(key);}
++    for(const id of a.entityIds) {const key=`${a.type}:${id}`; if(!/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/.test(id)||ids.has(key)||a.type==='Guide') throw Error(`Invalid/duplicate Entity ID: ${key}`); ids.add(key);}
+     for(const key of a.related) if(!/^(models|hardware|guides)\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(key)) throw Error(`Related Articles must use type/slug: ${key}`);
+     a.outgoing = [...new Set([...a.related,...[...String(a.body).matchAll(/\[\[((?:models|hardware|guides)\/[a-z0-9-]+)(?:\|[^\]]+)?\]\]/g)].map(m=>m[1]),...[...String(a.body).matchAll(/https:\/\/knowledge\.localllmfinder\.com\/((?:models|hardware|guides)\/[a-z0-9-]+)\//g)].map(m=>m[1])])];
+   }
+-  for(const a of articles) a.backlinks=articles.filter(b=>b.key!==a.key && b.outgoing.includes(a.key)).map(b=>b.key);
++  // Keep published guides focused while drafts are being prepared in bulk.
++  for(const a of articles) a.backlinks=articles.filter(b=>b.key!==a.key && (a.status==='Draft'||b.status==='Published') && b.outgoing.includes(a.key)).map(b=>b.key);
+   return {version:1,articles:articles.map(({body,...a})=>a)};
+ }
+ export function enhanceArticle(html, row, data) {
+@@ -20,7 +21,7 @@ export function enhanceArticle(html, row, data) {
+   const byKey=new Map(data.articles.map(a=>[a.key,a]));
+   const current=byKey.get(key);
+   html=html.replace(/\[\[((?:models|hardware|guides)\/[a-z0-9-]+)(?:\|([^\]]+))?\]\]/g,(_m,k,label)=>byKey.has(k)?`<a href="${escape(byKey.get(k).url)}">${label||escape(byKey.get(k).title)}</a>`:(label||escape(k.split('/')[1].replaceAll('-',' '))));
+-  // Hide links to unpublished Knowledge pages, including ordinary Markdown links.
++  // Hide links to unavailable (disabled or held) Knowledge pages.
+   html=html.replace(/<a href="https:\/\/knowledge\.localllmfinder\.com\/((?:models|hardware|guides)\/[a-z0-9-]+)\/">([\s\S]*?)<\/a>/g,(m,k,label)=>byKey.has(k)?m:label);
+   const toc=[];
+   let n=0;
+@@ -31,9 +32,35 @@ export function enhanceArticle(html, row, data) {
+   html=html.replace('<article>',`<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../../">Knowledge</a><span> / </span><a href="../../#${dirs[row.Type]}">${escape(row.Type)} references</a><span> / ${escape(row.Title)}</span></nav><article>`).replace('<div class="doc-body article-body">',`${nav}<div class="doc-body article-body">`);
+   const connections=(related.length?`<section class="doc-section"><h2>Related references</h2>${links(related)}</section>`:'')+(current.backlinks.length?`<section class="doc-section"><h2>Referenced by</h2>${links(current.backlinks)}</section>`:'');
+   html=html.replace('<div class="doc-actions">',`${connections}<div class="doc-actions">`).replaceAll('href="/"','href="../../"');
+-  return html.replace('</head>','<link rel="stylesheet" href="../../wiki.css?v=1"></head>');
++  return html.replace('</head>','<link rel="stylesheet" href="../../wiki.css?v=2"></head>');
+ }
+ export function renderIndex(data) {
+-  const groups=Object.entries(dirs).map(([type,dir])=>{const as=data.articles.filter(a=>a.type===type);return `<section class="doc-section reference-group" id="${dir}"><h2>${type} references <span class="reference-count">(${as.length})</span></h2>${as.length?`<ul class="reference-list">${as.map(a=>`<li data-reference-search="${escape(`${a.title} ${a.summary} ${a.type}`.toLowerCase())}"><a href="${escape(a.url)}">${escape(a.title)}</a><p>${escape(a.summary)}</p></li>`).join('')}</ul>`:'<p>No published references yet.</p>'}</section>`;}).join('');
+-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="${data.articles.length?'index':'noindex'},follow"><meta name="description" content="Sourced model, hardware and practical guides for Local LLM Finder."><link rel="canonical" href="${origin}/"><title>Knowledge — Local LLM Finder</title><link rel="icon" href="./favicon.svg"><link rel="stylesheet" href="https://localllmfinder.com/dist/styles.css?v=20260929d"><link rel="stylesheet" href="./docs.css"><link rel="stylesheet" href="./wiki.css?v=1"><link rel="stylesheet" href="./sandbox-refine.css?v=cleanup-2"></head><body><main class="docs-shell"><header class="site-topbar"><a class="site-brand" href="https://localllmfinder.com/">Local LLM Finder</a><nav class="site-nav" aria-label="Site"><a href="https://localllmfinder.com/">Finder</a><a class="knowledge-nav" href="./" aria-current="page">Knowledge</a><a href="https://localllmfinder.com/dist/methodology.html">Methodology</a></nav></header><header class="doc-hero"><h1>Model and hardware references</h1><p class="doc-lede">Requirements, quantization, context and practical hardware guidance. Each reference links back to the Finder and cites its sources.</p></header><div class="reference-search"><label for="reference-search">Find a reference</label><input id="reference-search" type="search" placeholder="Search models, hardware or guides" aria-describedby="reference-search-status"><p id="reference-search-status" role="status" aria-live="polite">${data.articles.length} published reference${data.articles.length===1?'':'s'}</p></div><nav class="reference-types" aria-label="Reference categories"><a href="#models">Models</a><a href="#hardware">Hardware</a><a href="#guides">Guides</a></nav>${groups}<footer class="doc-footer"><span>Local LLM Finder</span><nav aria-label="Footer"><a href="https://localllmfinder.com/">Finder</a><a href="https://localllmfinder.com/dist/privacy.html">Privacy</a><a href="https://localllmfinder.com/dist/terms.html">Terms</a></nav></footer></main><script type="module" src="./wiki-search.js?v=1"></script></body></html>`;
++  const published=data.articles.filter(a=>a.status!=='Draft').length;
++  const drafts=data.articles.length-published;
++  const groups=Object.entries(dirs).map(([type,dir])=>{
++    const articles=data.articles.filter(a=>a.type===type);
++    const items=articles.map(a=>`<li data-reference-status="${a.status||'Published'}" data-reference-search="${escape(`${a.title} ${a.summary} ${a.type}`.toLowerCase())}"><a href="${escape(a.url)}">${escape(a.title)}</a>${a.status==='Draft'?'<span class="reference-draft">Draft</span>':''}<p>${escape(a.summary)}</p></li>`).join('');
++    return `<section class="doc-section reference-group" id="${dir}"><h2>${type} references <span class="reference-count">(${articles.length})</span></h2>${items?`<ul class="reference-list">${items}</ul>`:'<p>No references yet.</p>'}</section>`;
++  }).join('');
++  return `<!doctype html>
++<html lang="en"><head>
++<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
++<meta name="robots" content="${published?'index':'noindex'},follow">
++<meta name="description" content="Model, hardware and practical guides for Local LLM Finder, with drafts available for review.">
++<link rel="canonical" href="${origin}/"><title>Knowledge — Local LLM Finder</title>
++<link rel="icon" href="./favicon.svg">
++<link rel="stylesheet" href="https://localllmfinder.com/dist/styles.css?v=20260929d">
++<link rel="stylesheet" href="./docs.css"><link rel="stylesheet" href="./wiki.css?v=2">
++<link rel="stylesheet" href="./sandbox-refine.css?v=cleanup-2">
++</head><body><main class="docs-shell">
++<header class="site-topbar"><a class="site-brand" href="https://localllmfinder.com/">Local LLM Finder</a><nav class="site-nav" aria-label="Site"><a href="https://localllmfinder.com/">Finder</a><a class="knowledge-nav" href="./" aria-current="page">Knowledge</a><a href="https://localllmfinder.com/dist/methodology.html">Methodology</a></nav></header>
++<header class="doc-hero"><h1>Model and hardware references</h1><p class="doc-lede">Requirements, quantization, context and practical hardware guidance. Drafts are available to read while their sources and details are reviewed.</p><p class="reference-totals">${published} published · ${drafts} drafts</p></header>
++<div class="reference-search"><div class="reference-controls">
++<div><label for="reference-search">Find a reference</label><input id="reference-search" type="search" placeholder="Search models, hardware or guides" aria-describedby="reference-search-status"></div>
++<div><label for="reference-status">Show</label><select id="reference-status"><option value="all">All references</option><option value="Published">Published</option><option value="Draft">Drafts</option></select></div>
++</div><p id="reference-search-status" role="status" aria-live="polite">${data.articles.length} references</p></div>
++<nav class="reference-types" aria-label="Reference categories"><a href="#models">Models</a><a href="#hardware">Hardware</a><a href="#guides">Guides</a></nav>
++${groups}
++<footer class="doc-footer"><span>Local LLM Finder</span><nav aria-label="Footer"><a href="https://localllmfinder.com/">Finder</a><a href="https://localllmfinder.com/dist/privacy.html">Privacy</a><a href="https://localllmfinder.com/dist/terms.html">Terms</a></nav></footer>
++</main><script type="module" src="./wiki-search.js?v=2"></script></body></html>`;
+ }
+diff --git a/tests/article-build.test.mjs b/tests/article-build.test.mjs
+index ba766f3..68f839c 100644
+--- a/tests/article-build.test.mjs
++++ b/tests/article-build.test.mjs
+@@ -10,7 +10,8 @@ const output=path.join(temporary,'site'), csv=path.join(temporary,'articles.csv'
+ const headers=['Enabled','Type','Slug','Title','Summary','Body Markdown','Meta Title','Meta Description','Author','Date Published','Date Modified','Status','Canonical URL','Source URLs','Entity IDs','Related Articles'];
+ const article=(Type,Slug,Status='Published',extra={})=>({Enabled:'TRUE',Type,Slug,Title:Slug,Summary:'Article summary','Body Markdown':'## Memory\n\nUseful article body.','Meta Title':Slug,'Meta Description':'Article description',Author:'Local LLM Finder','Date Published':'2026-10-01','Date Modified':'2026-10-01',Status,'Canonical URL':`https://knowledge.localllmfinder.com/${{Model:'models',Guide:'guides'}[Type]}/${Slug}/`,'Source URLs':'https://huggingface.co/Qwen/Qwen3-8B',...extra});
+ const model=article('Model','example','Published',{'Entity IDs':'model-7','Related Articles':'guides/quant, guides/draft','Body Markdown':'## Memory\n\n[Compare hardware](https://localllmfinder.com/#d=gpu&g=rtx-3060&v=12) [[guides/quant|Quantization]] [[guides/draft|Draft guide]]'});
+-const rows=[model,article('Guide','quant'),article('Guide','draft','Draft')];
++const draft=article('Guide','draft','Draft',{'Date Published':''});
++const rows=[model,article('Guide','quant'),draft,article('Guide','held','Hold'),article('Guide','disabled','Draft',{Enabled:'FALSE'})];
+ async function build(records){
+   const lines=[headers,...records.map(row=>headers.map(key=>row[key]||''))].map(row=>row.map(value=>'"'+String(value).replaceAll('"','""')+'"').join(','));
+   await writeFile(csv,lines.join('\n')+'\n');
+@@ -24,15 +25,35 @@ try {
+   assert.ok(html.includes('href="https://localllmfinder.com/#d=gpu&amp;g=rtx-3060&amp;v=12"'),'Finder hash parameters must be escaped exactly once');
+   assert.ok(!html.includes('&amp;amp;'),'URLs must not be double escaped');
+   assert.ok(html.includes('href="https://knowledge.localllmfinder.com/guides/quant/"'));
+-  assert.ok(!html.includes('href="https://knowledge.localllmfinder.com/guides/draft/"'));
+-  assert.equal(JSON.parse(referenceText).articles.length,2);
++  assert.ok(html.includes('href="https://knowledge.localllmfinder.com/guides/draft/"'));
++  const references=JSON.parse(referenceText);
++  assert.equal(references.articles.length,3);
++  assert.equal(references.articles.find(a=>a.slug==='draft').status,'Draft');
++  const draftHtml=await readFile(path.join(output,'guides/draft/index.html'),'utf8');
++  assert.ok(draftHtml.includes('<meta name="robots" content="noindex,follow">'));
++  assert.ok(draftHtml.includes('Draft reference'));
++  assert.ok(draftHtml.includes('Edit this draft'));
++  assert.ok(draftHtml.includes('range=A4:Q4'),'Draft editor must target the actual Sheet row');
++  assert.ok(!draftHtml.includes('application/ld+json'),'Drafts must not claim published Article metadata');
++  assert.ok(html.includes('<meta name="robots" content="index,follow">'));
++  assert.ok(html.includes('application/ld+json'));
+   assert.ok(!(await readFile(path.join(output,'sitemap.xml'),'utf8')).includes('/guides/draft/'));
+-  await assert.rejects(access(path.join(output,'guides/draft/index.html')));
+-  for(const invalid of [article('Guide','invalid','Published',{'Body Markdown':''}),article('Model','duplicate','Published',{'Entity IDs':'model-7'})]){
++  await assert.rejects(access(path.join(output,'guides/held/index.html')));
++  await assert.rejects(access(path.join(output,'guides/disabled/index.html')));
++  for(const invalid of [article('Guide','invalid','Published',{'Body Markdown':''}),article('Model','duplicate','Draft',{'Entity IDs':'model-7'}),article('Guide','invalid-draft','Draft',{'Body Markdown':''})]){
+     run=await build([...rows,invalid]);
+     assert.notEqual(run.status,0,'Invalid publication must fail');
+     assert.equal(await readFile(path.join(output,'models/example/index.html'),'utf8'),html,'Failed validation must preserve existing article pages');
+     assert.equal(await readFile(path.join(output,'references.json'),'utf8'),referenceText,'Failed validation must preserve the deployed registry');
+   }
+-  console.log('Article build passed: Finder deep links, draft exclusion and transactional validation.');
++  run=await build([article('Guide','draft-only','Draft',{'Date Published':''})]);
++  assert.equal(run.status,0,run.stderr);
++  assert.ok((await readFile(path.join(output,'index.html'),'utf8')).includes('content="noindex,follow"'));
++  assert.ok(!(await readFile(path.join(output,'sitemap.xml'),'utf8')).includes('<url>'));
++  run=await build([article('Guide','draft-only','Published')]);
++  assert.equal(run.status,0,run.stderr);
++  assert.ok((await readFile(path.join(output,'guides/draft-only/index.html'),'utf8')).includes('content="index,follow"'));
++  assert.ok(!(await readFile(path.join(output,'guides/draft-only/index.html'),'utf8')).includes('Draft reference'));
++  assert.ok((await readFile(path.join(output,'sitemap.xml'),'utf8')).includes('/guides/draft-only/'));
++  console.log('Article build passed: public noindex drafts, status promotion, held/disabled exclusion, exact editor rows, Finder links and transactional validation.');
+ } finally {await rm(temporary,{recursive:true,force:true});}
+diff --git a/tests/wiki.test.mjs b/tests/wiki.test.mjs
+index 43e0d30..e80b761 100644
+--- a/tests/wiki.test.mjs
++++ b/tests/wiki.test.mjs
+@@ -12,4 +12,13 @@ assert.throws(()=>registry([rows[0],article('Model','other','model-11')]));
+ assert.throws(()=>registry([article('Model','x','','bad-path')]));
+ assert.ok(renderIndex(data).includes('Find a reference'));
+ assert.ok(!renderIndex(data).includes('Coming soon'));
+-console.log('Published reference relationships, draft hiding, duplicate IDs and index passed.');
++const draft={...article('Model','draft-model','model-10','guides/quant'),Status:'Draft'};
++const withDraft=registry([...rows,draft]);
++assert.equal(registry([{...draft,'Entity IDs':'extra-glm-4.5-air'}]).articles[0].entityIds[0],'extra-glm-4.5-air');
++assert.equal(withDraft.articles.at(-1).status,'Draft');
++assert.deepEqual(withDraft.articles.find(a=>a.slug==='quant').backlinks,['models/coder'],'Draft preparation must not overwhelm published backlinks');
++assert.match(renderIndex(withDraft),/data-reference-status="Draft"/);
++assert.match(renderIndex(withDraft),/2 published · 1 drafts/);
++assert.match(renderIndex(withDraft),/id="reference-status"/);
++assert.match(renderIndex(registry([draft])),/content="noindex,follow"/);
++console.log('Available reference relationships, draft status, focused backlinks, duplicate IDs and searchable index passed.');
+diff --git a/wiki-search.js b/wiki-search.js
+index 0968b71..0876c91 100644
+--- a/wiki-search.js
++++ b/wiki-search.js
+@@ -1,6 +1,23 @@
+ const input=document.querySelector('#reference-search');
+-if(input) input.addEventListener('input',()=>{
+-  const query=input.value.trim().toLowerCase();let count=0;
+-  for(const row of document.querySelectorAll('[data-reference-search]')) {row.hidden=!row.dataset.referenceSearch.includes(query);if(!row.hidden) count++;}
+-  document.querySelector('#reference-search-status').textContent=count?`${count} matching reference${count===1?'':'s'}`:'No matching references. Try another search.';
+-});
++const status=document.querySelector('#reference-status');
++if(input){
++  const requested=new URL(location.href).searchParams.get('status');
++  if(status&&['Draft','Published'].includes(requested))status.value=requested;
++  function update(){
++    const query=input.value.trim().toLowerCase(),selected=status?.value||'all';
++    let count=0;
++    for(const row of document.querySelectorAll('[data-reference-search]')){
++      row.hidden=!row.dataset.referenceSearch.includes(query)||(selected!=='all'&&row.dataset.referenceStatus!==selected);
++      if(!row.hidden)count++;
++    }
++    for(const group of document.querySelectorAll('.reference-group')){
++      const visible=group.querySelectorAll('[data-reference-search]:not([hidden])').length;
++      group.hidden=!visible;
++      group.querySelector('.reference-count').textContent=`(${visible})`;
++    }
++    document.querySelector('#reference-search-status').textContent=count?`${count} matching reference${count===1?'':'s'}`:'No matching references. Try another search or status.';
++  }
++  input.addEventListener('input',update);
++  status?.addEventListener('change',update);
++  update();
++}
+diff --git a/wiki.css b/wiki.css
+index 110a9c0..33103b8 100644
+--- a/wiki.css
++++ b/wiki.css
+@@ -4,6 +4,8 @@ body{background:#151719;background-image:none;color:#f3f4ef}
+ .site-nav a{display:inline-flex;align-items:center;min-height:44px}
+ .reference-search{margin:24px 0 16px}.reference-search label{display:block;font-weight:600;margin-bottom:8px}
+ .reference-search input{width:100%;min-height:44px;border:1px solid #59626b;border-radius:2px;background:#202326;color:#f3f4ef;padding:10px 12px;font:inherit}
++.reference-controls{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:16px}.reference-controls select{width:100%;min-height:44px;border:1px solid #59626b;border-radius:2px;background:#202326;color:#f3f4ef;padding:10px 12px;font:inherit}
++.reference-draft{display:inline-block;margin-left:12px;color:#bcc2c7;font-size:.8rem}.reference-totals{color:#bcc2c7;font-size:.875rem}.draft-notice{margin-top:20px;padding:16px 0;border-block:1px solid #3b4147}.draft-notice p{margin:8px 0;line-height:1.6}
+ .reference-search p,.reference-count{font-size:.875rem;color:#bcc2c7}.reference-types{display:flex;gap:24px;flex-wrap:wrap}
+ .reference-types a{min-height:44px;display:inline-flex;align-items:center}
+ .reference-list{list-style:none;padding:0!important;margin:8px 0 0!important}.reference-list li{max-width:none;padding:16px 0;border-bottom:1px solid #3b4147}.reference-list p{margin-top:6px}.reference-list a{font-weight:600}
+@@ -11,4 +13,4 @@ body{background:#151719;background-image:none;color:#f3f4ef}
+ .breadcrumbs{font-size:.875rem;margin-top:24px;line-height:1.8;overflow-wrap:anywhere}.article-contents{padding:20px 0;border-bottom:1px solid #3b4147}.article-contents ul{display:flex;flex-wrap:wrap;gap:8px 24px;list-style:none;padding:0;margin:12px 0 0}
+ a{color:#9cbfff;text-underline-offset:3px}.article-body h2{scroll-margin-top:20px}.article-body code{border-radius:2px}
+ :focus-visible{outline:2px solid #9cbfff;outline-offset:3px}[hidden]{display:none!important}
+-@media(max-width:700px){.site-nav a:not([aria-current=page]):not(.knowledge-nav){display:inline-flex}.site-topbar{flex-wrap:wrap;gap:0;padding:10px 0}.site-nav{flex-wrap:wrap;gap:16px}.article-contents ul{display:block}.article-contents li{margin-block:8px}}
++@media(max-width:700px){.reference-controls{grid-template-columns:minmax(0,1fr)}.site-nav a:not([aria-current=page]):not(.knowledge-nav){display:inline-flex}.site-topbar{flex-wrap:wrap;gap:0;padding:10px 0}.site-nav{flex-wrap:wrap;gap:16px}.article-contents ul{display:block}.article-contents li{margin-block:8px}}

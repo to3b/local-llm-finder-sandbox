@@ -5,7 +5,7 @@ export function validateReferences(data) {
   for(const a of data.articles){
     const directory={Model:'models',Hardware:'hardware',Guide:'guides'}[a.type];
     if(!directory||!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(a.slug)||a.key!==`${directory}/${a.slug}`||a.url!==`https://knowledge.localllmfinder.com/${directory}/${a.slug}/`||!Array.isArray(a.entityIds)) throw Error('Invalid reference URL');
-    for(const id of a.entityIds){const key=`${a.type}:${id}`;if(!/^[a-z0-9-]+$/.test(id)||map.has(key))throw Error('Invalid reference ID');map.set(key,a);}
+    for(const id of a.entityIds){const key=`${a.type}:${id}`;if(!/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/.test(id)||map.has(key))throw Error('Invalid reference ID');map.set(key,a);}
   }
   return map;
 }
@@ -19,7 +19,7 @@ if(typeof document!=='undefined') {
     const article=references.get(`${type}:${id}`);const key=article?.key||'';
     if(slot.dataset.loadedReference===key)return;
     slot.dataset.loadedReference=key;slot.replaceChildren();slot.hidden=!article;
-    if(article){const a=document.createElement('a');a.href=new URL(article.key+'/',base).href;a.textContent=label;slot.append(a);}
+    if(article){const a=document.createElement('a');a.href=new URL(article.key+'/',base).href;a.textContent=label+(article.status==='Draft'?' (draft)':'');slot.append(a);}
   }
   function update(){
     root?.querySelectorAll('[data-reference-id]').forEach(slot=>populate(slot,'Model',slot.dataset.referenceId,'Model reference'));
