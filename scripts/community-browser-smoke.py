@@ -28,6 +28,13 @@ def fixture(mode='success',reports=None):
 try:
     get('knowledge-preview/models/qwen3-8b/')
     assert not driver.find_elements(By.CSS_SELECTOR,'nav[aria-label="Site"] a[href*="/tests/"]')
+    assert not driver.find_element(By.CSS_SELECTOR,'.article-contents').get_attribute('open')
+    sources=driver.find_element(By.CSS_SELECTOR,'.article-sources')
+    assert sources.tag_name=='details' and not sources.get_attribute('open')
+    driver.find_element(By.CSS_SELECTOR,'.article-contents > summary').click()
+    driver.find_element(By.CSS_SELECTOR,'.article-contents a[href="#'+sources.get_attribute('id')+'"]').click()
+    wait.until(lambda d:d.find_element(By.CSS_SELECTOR,'.article-sources').get_attribute('open'))
+    assert not driver.find_element(By.CSS_SELECTOR,'.article-contents').get_attribute('open')
     invite=driver.find_element(By.CSS_SELECTOR,'.article-test-invite')
     assert 'Have you tried this LLM?' in invite.text
     invite.find_element(By.TAG_NAME,'a').click()
@@ -40,9 +47,18 @@ try:
     assert driver.find_element(By.ID,'article-return').is_displayed()
     assert driver.find_element(By.ID,'contextTokens').get_attribute('value')=='','Planner context must not be presented as an actual tested setting'
     assert not driver.find_element(By.ID,'extra-details').get_attribute('open')
-    driver.find_element(By.CSS_SELECTOR,'a[href="#test-guide"]').click()
+    driver.find_element(By.CSS_SELECTOR,'#test-guide > summary').click()
     wait.until(lambda d:d.find_element(By.ID,'test-guide').get_attribute('open'))
-    assert len(driver.find_elements(By.CSS_SELECTOR,'.baseline-prompt'))==2
+    assert len(driver.find_elements(By.CSS_SELECTOR,'.baseline-prompt'))==1
+    assert driver.find_element(By.ID,'test-guide').find_element(By.XPATH,'..').get_attribute('id')=='test-form'
+    assert not driver.find_elements(By.CSS_SELECTOR,'.test-nav')
+    scenario=driver.find_element(By.ID,'testScenario')
+    from selenium.webdriver.support.ui import Select
+    Select(scenario).select_by_value('baseline-code-v1')
+    assert 'Python function' in driver.find_element(By.CSS_SELECTOR,'.baseline-prompt blockquote').text
+    Select(scenario).select_by_value('custom')
+    assert not driver.find_elements(By.CSS_SELECTOR,'.baseline-prompt')
+    Select(scenario).select_by_value('baseline-writing-v1')
     driver.find_element(By.CSS_SELECTOR,'.baseline-prompt button').click()
     assert driver.find_element(By.ID,'testScenario').get_attribute('value')=='baseline-writing-v1'
     assert not driver.find_elements(By.CSS_SELECTOR,'[name="response"],[name="reply"],[name="answer"]')
@@ -100,5 +116,13 @@ try:
     wait.until(lambda d:'3060' in d.find_element(By.ID,'hardware').get_attribute('value'))
     assert 'hardware=rtx-3060' in driver.current_url
     assert driver.find_element(By.ID,'model').get_attribute('value')==''
+    get('knowledge-preview/models/qwen3-14b/#section-3')
+    wait.until(lambda d:d.find_element(By.CSS_SELECTOR,'.editor-checklist').get_attribute('open'))
+    get('knowledge-preview/')
+    assert len(driver.find_elements(By.CSS_SELECTOR,'[data-reference-search]'))==280
+    assert not driver.find_elements(By.CSS_SELECTOR,'.reference-list li p')
+    driver.find_element(By.ID,'reference-search').send_keys('Qwen3 8B')
+    wait.until(lambda d:'matching' in d.find_element(By.ID,'reference-search-status').text)
+    assert any('Qwen3 8B' in x.text for x in driver.find_elements(By.CSS_SELECTOR,'[data-reference-search]:not([hidden])'))
     print('Community browser checks passed: article prefill, baseline prompts, minimal required input, pasted-speed privacy, failure/retry, durable-receipt UI, no-load reports, empty results and responsive layouts.')
 finally:driver.quit()

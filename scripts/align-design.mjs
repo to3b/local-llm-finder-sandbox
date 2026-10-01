@@ -13,6 +13,7 @@ function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){
   let html=fs.readFileSync(file,'utf8');
   html=html.replace(/<meta name="theme-color" content="[^"]*">/g,'');
   html=html.replace(/src="\.\/(tests|results)\.js"/g,(_,module)=>`src="./${module}.js?v=${version}"`);
+  html=html.replace(/href="\.\/tests\.css(?:\?[^"]*)?"/g,`href="./tests.css?v=${version}"`);
   html=html.replace('</head>',`<meta name="theme-color" content="#151719"><link rel="stylesheet" href="${base}dist/sandbox-design.css?v=${version}" data-sandbox-design></head>`);
   fs.writeFileSync(file,html);count++;
  }

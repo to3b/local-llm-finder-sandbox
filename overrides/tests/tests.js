@@ -42,7 +42,7 @@ form.addEventListener('submit',async event=>{
 });
 document.querySelector('#another').addEventListener('click',()=>{form.reset();benchmark=null;syncOutcome();clearError();form.hidden=false;document.querySelector('#success').hidden=true;document.querySelector('#extra-details').open=false;document.querySelector('.import-panel').open=false;form.elements.hardware.focus();});
 
-function readOutput(text){const status=document.querySelector('#import-status');try{const parsed=parseTestOutput(text);if(!parsed.recognized){status.textContent='We couldn’t find a generation-speed result. You can enter the speed yourself or send a quick report below.';return;}const model=selected(catalogue.models,parsed.model||'');if(model)parsed.model=model.name;apply(parsed);remember();status.textContent=parsed.benchmark?`Imported ${parsed.benchmark.samples.length} repeated runs. Check the hardware and model below, then submit.`:'Found a generation-speed result. Check the details below, then choose how it ran.';document.querySelector('#test-output').value='';}catch(e){status.textContent=e.message;}}
+function readOutput(text){const status=document.querySelector('#import-status');try{const parsed=parseTestOutput(text);if(!parsed.recognized){status.textContent='We couldn’t find a generation-speed result. You can enter the speed yourself or send a quick report below.';return;}const model=selected(catalogue.models,parsed.model||'');if(model)parsed.model=model.name;apply(parsed);showPrompt();remember();status.textContent=parsed.benchmark?`Imported ${parsed.benchmark.samples.length} repeated runs. Check the hardware and model below, then submit.`:'Found a generation-speed result. Check the details below, then choose how it ran.';document.querySelector('#test-output').value='';}catch(e){status.textContent=e.message;}}
 document.querySelector('#read-output').addEventListener('click',()=>readOutput(document.querySelector('#test-output').value));
 document.querySelector('#output-file').addEventListener('change',async event=>{const file=event.target.files[0];if(!file)return;if(file.size>100000){document.querySelector('#import-status').textContent='Choose a test output file under 100 KB.';return;}readOutput(await file.text());event.target.value='';});
 
@@ -57,12 +57,20 @@ try{
  if(m||h)remember();
 }catch{/* Free-text reports remain available if catalogue suggestions cannot load. */}
 
-for(const baseline of BASELINE_PROMPTS){
+const scenario=form.elements.testScenario,guide=document.querySelector('#test-guide'),promptRoot=document.querySelector('#baseline-prompts');
+function showPrompt(){
+ promptRoot.replaceChildren();document.querySelector('#baseline-status').textContent='';
+ const baseline=BASELINE_PROMPTS.find(p=>p.id===scenario.value)||(!scenario.value?BASELINE_PROMPTS[0]:null);
+ document.querySelector('#repeat-guide').hidden=scenario.value==='custom';
+ if(!baseline){const note=document.createElement('p');note.className='field-help';note.textContent='Describe your task under optional settings if useful.';promptRoot.append(note);return;}
  const section=document.createElement('section');section.className='baseline-prompt';const title=document.createElement('h3');title.textContent=baseline.title;const prompt=document.createElement('blockquote');prompt.textContent=baseline.prompt;
- const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent='Copy '+baseline.title.toLowerCase();button.addEventListener('click',async()=>{const status=document.querySelector('#baseline-status');try{await navigator.clipboard.writeText(baseline.prompt);form.elements.testScenario.value=baseline.id;remember();status.textContent=baseline.title+' copied. The test type is selected below. Paste it into a fresh chat in your app.';}catch{form.elements.testScenario.value=baseline.id;remember();status.textContent='Copy the prompt text above into your app. The test type is selected below.';}});section.append(title,prompt,button);document.querySelector('#baseline-prompts').append(section);
+ const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent='Copy prompt';button.addEventListener('click',async()=>{const status=document.querySelector('#baseline-status');scenario.value=baseline.id;remember();try{await navigator.clipboard.writeText(baseline.prompt);status.textContent='Copied. Paste into a fresh chat in your app.';}catch{status.textContent='Select and copy the prompt above into your app.';}});section.append(title,prompt,button);promptRoot.append(section);
 }
-document.querySelectorAll('a[href="#test-guide"]').forEach(link=>link.addEventListener('click',()=>{document.querySelector('#test-guide').open=true;}));
-if(location.hash==='#test-guide')document.querySelector('#test-guide').open=true;
+scenario.addEventListener('change',showPrompt);showPrompt();
+// Draft restore, imports and another-report reset must keep the selected prompt in sync.
+form.addEventListener('change',event=>{if(event.target===scenario)remember();});
+document.querySelector('#another').addEventListener('click',()=>{guide.open=false;showPrompt();});
+if(location.hash==='#test-guide')guide.open=true;
 
 const context=document.modelContext;
 if(context?.registerTool){
