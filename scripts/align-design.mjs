@@ -12,8 +12,11 @@ function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){
  else if(entry.name.endsWith('.html')){
   let html=fs.readFileSync(file,'utf8');
   html=html.replace(/<meta name="theme-color" content="[^"]*">/g,'');
+  html=html.replace(/src="\.\/(tests|results)\.js"/g,(_,module)=>`src="./${module}.js?v=${version}"`);
   html=html.replace('</head>',`<meta name="theme-color" content="#151719"><link rel="stylesheet" href="${base}dist/sandbox-design.css?v=${version}" data-sandbox-design></head>`);
   fs.writeFileSync(file,html);count++;
  }
 }}
-walk(root);console.log(`Shared square-corner design applied last on all ${count} sandbox HTML pages.`);
+walk(root);
+for(const rel of ['tests/tests.js','tests/results.js']){const file=path.join(root,rel);fs.writeFileSync(file,fs.readFileSync(file,'utf8').replace("from './submissions.js';",`from './submissions.js?v=${version}';`));}
+console.log(`Shared square-corner design applied last on all ${count} sandbox HTML pages.`);

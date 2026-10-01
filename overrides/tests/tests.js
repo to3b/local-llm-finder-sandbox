@@ -3,7 +3,9 @@ import { normalizeSubmission, parseTestOutput, BASELINE_PROMPTS } from './submis
 
 const form=document.querySelector('#test-form'),error=document.querySelector('#form-error'),submit=document.querySelector('#submit-test');
 const fields=['hardware','model','generationTps','runtime','quant','contextTokens','memoryGB','runtimeVersion','nickname','testScenario','note'];
-const key='llf-test-draft-v1';
+const entryParams=new URLSearchParams(location.search),entryFields=['from','model','hardware','device','memory','quant'];
+const entryKey=entryFields.some(k=>entryParams.has(k))?JSON.stringify(entryFields.map(k=>entryParams.get(k))):'';
+const key='llf-test-draft-v2:'+entryKey;
 let catalogue={models:[],hardware:[]},benchmark=null,id=uuid();
 function uuid(){if(crypto.randomUUID)return crypto.randomUUID();return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));}
 function stored(k){try{return localStorage.getItem(k);}catch{return null;}}
@@ -18,7 +20,7 @@ function syncOutcome(){const unable=form.elements.outcome.value==='unable';docum
 function clearError(){error.hidden=true;error.textContent='';form.querySelectorAll('[aria-invalid]').forEach(e=>e.removeAttribute('aria-invalid'));}
 function showError(message){error.textContent=message;error.hidden=false;}
 
-try{const draft=JSON.parse(stored(key)||'null');if(draft){apply(draft);id=/^[a-f0-9-]{36}$/i.test(draft.id||'')?draft.id:id;}}catch{}
+try{const draft=JSON.parse(stored(key)||(!entryKey?stored('llf-test-draft-v1'):null)||'null');if(draft){apply(draft);id=/^[a-f0-9-]{36}$/i.test(draft.id||'')?draft.id:id;}}catch{}
 form.addEventListener('input',()=>{clearError();syncOutcome();remember();});
 form.addEventListener('change',()=>{syncOutcome();remember();});
 form.addEventListener('submit',async event=>{
@@ -34,7 +36,7 @@ form.addEventListener('submit',async event=>{
   let response;try{response=await fetch(API_BASE+'/api/submissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...report,id,clientId,website:form.elements.website.value}),signal:controller.signal});}finally{clearTimeout(timeout);}
   const data=await response.json();if(!response.ok||!data.id)throw new Error(data.error||'We could not save your report. Please try again.');
   form.hidden=true;const success=document.querySelector('#success');success.hidden=false;document.querySelector('#receipt').textContent=`Reference ${data.id.slice(0,8)} · ${data.duplicate?'This report was already received.':'Saved for review.'}`;success.focus();
-  try{localStorage.removeItem(key);}catch{}id=uuid();
+  try{localStorage.removeItem(key);if(!entryKey)localStorage.removeItem('llf-test-draft-v1');}catch{}id=uuid();
  }catch(e){showError(e.name==='AbortError'?'Saving took too long. Your details are still here; please try again.':e.message==='Failed to fetch'?'We could not reach test storage. Your details are still here; please try again.':e.message);}
  finally{submit.disabled=false;submit.textContent='Submit for review';}
 });
