@@ -120,6 +120,15 @@ tuning = replace(tuning, 'select.value = input.value;', `if (![...select.options
 tuning = replace(tuning, "control.classList.add('priority-enhanced');", "control.classList.add('priority-enhanced');\n  input.tabIndex = -1;");
 write('dist/copy-tune.js', tuning);
 if (fs.existsSync(knowledgeRoot)) {
+ // Generated articles need the same isolated Finder/Knowledge routes as the index.
+ const routeHtml = directory => {
+   for (const entry of fs.readdirSync(directory,{withFileTypes:true})) {
+     const file=path.join(directory,entry.name);
+     if(entry.isDirectory()) routeHtml(file);
+     else if(entry.name.endsWith('.html')) fs.writeFileSync(file,fs.readFileSync(file,'utf8').replaceAll('https://localllmfinder.com/dist/',basePath+'dist/').replaceAll('https://localllmfinder.com/',basePath).replaceAll('https://knowledge.localllmfinder.com/',basePath+'knowledge-preview/'));
+   }
+ };
+ routeHtml(knowledgeRoot);
  const file = path.join(knowledgeRoot, 'knowledge-data.js');
  let data = fs.readFileSync(file, 'utf8');
  data = replace(data, "return parsed.protocol === 'https:' ? parsed.href : '';", `if (parsed.origin === 'https://localllmfinder.com') return ${JSON.stringify(basePath)} + parsed.pathname.slice(1) + parsed.hash;
