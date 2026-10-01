@@ -191,12 +191,17 @@ try:
         wait.until(lambda d: 'No matches for' in d.find_element(By.ID, 'catalog-count').text)
         search.clear(); search.send_keys('Qwen')
         wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, '.catalog-list .model-row')) > 0)
-        for page in ['dist/methodology.html', 'dist/privacy.html', 'dist/terms.html', 'knowledge-preview/']:
+        for page in ['knowledge.html', 'dist/methodology.html', 'dist/privacy.html', 'dist/terms.html', 'knowledge-preview/']:
             driver.get(url + page)
             wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.site-topbar'))
             assert driver.execute_script('return document.documentElement.scrollWidth <= innerWidth'), f'{page} overflow at {width}'
             nav = driver.find_elements(By.CSS_SELECTOR, '.site-nav a')
             assert all(link.is_displayed() for link in nav), f'Hidden navigation on {page} at {width}'
+            assert all('/local-llm-finder-sandbox/' in link.get_attribute('href') for link in nav), f'Navigation escapes sandbox on {page}'
+            assert driver.execute_script("return [...document.querySelectorAll('link[rel=stylesheet]')].every(link => link.sheet !== null)"), f'Missing stylesheet on {page}'
+            assert driver.execute_script("return [...document.querySelectorAll('.preview-card, .doc-summary-card, .doc-callout')].every(el => getComputedStyle(el).borderRadius === '0px')"), f'Rounded panel on {page}'
+            if page == 'knowledge.html':
+                driver.save_screenshot(f'browser-evidence/knowledge-legacy-{width}.png')
         driver.save_screenshot(f'browser-evidence/knowledge-{width}.png')
 
     severe = []

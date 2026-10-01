@@ -85,7 +85,8 @@ for (const rel of ['index.html','dist/index.html']) {
 }
 for (const rel of ['dist/methodology.html','dist/privacy.html','dist/terms.html','knowledge.html']) {
  let html = read(rel);
- html = replace(html, '</head>', '<link rel="stylesheet" href="'+(rel.startsWith('dist/')?'./':'./dist/')+'sandbox-refine.css?v=cleanup-1"></head>');
+ html = replace(html, '</head>', `<link rel="stylesheet" href="${basePath}dist/sandbox-refine.css?v=${process.env.GITHUB_SHA || 'cleanup-2'}"></head>`);
+ html = html.replaceAll('href="/knowledge.html"', `href="${basePath}knowledge.html"`);
  html = html.replaceAll('>Knowledge</a>', '>Knowledge preview</a>');
  if (rel.includes('privacy')) html = html.replace('Privacy, without the mystery','Privacy');
  if (rel.includes('terms')) html = html.replace('Use this as a starting point','Terms &amp; disclaimer');
@@ -98,7 +99,7 @@ const knowledgeRoot = path.join(root,'knowledge-preview');
 if (fs.existsSync(knowledgeRoot)) {
  let html = fs.readFileSync(path.join(knowledgeRoot,'index.html'),'utf8');
  html = html.replaceAll('https://localllmfinder.com/dist/', basePath+'dist/').replaceAll('https://localllmfinder.com/',basePath);
- html = replace(html,'</head>',`<link rel="stylesheet" href="${basePath}dist/sandbox-refine.css?v=cleanup-1"></head>`);
+ html = replace(html,'</head>',`<link rel="stylesheet" href="${basePath}dist/sandbox-refine.css?v=${process.env.GITHUB_SHA || 'cleanup-2'}"></head>`);
  html = html.replace('class="knowledge-nav" href="/"',`class="knowledge-nav" href="${basePath}knowledge-preview/"`);
  fs.writeFileSync(path.join(knowledgeRoot,'index.html'),html);
  for (const rel of ['index.html','dist/index.html','dist/methodology.html','dist/privacy.html','dist/terms.html']) {
