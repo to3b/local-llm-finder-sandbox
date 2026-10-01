@@ -228,13 +228,16 @@ try:
                 Select(driver.find_element(By.ID, 'reference-status')).select_by_value('Published')
                 driver.find_element(By.ID, 'reference-search').send_keys('nothing-matches-this')
                 assert 'No matching references' in driver.find_element(By.ID, 'reference-search-status').text
-                driver.find_element(By.ID, 'reference-search').clear()
+                driver.find_element(By.ID, 'reference-search').send_keys(Keys.CONTROL, 'a')
+                driver.find_element(By.ID, 'reference-search').send_keys(Keys.BACKSPACE)
                 driver.find_element(By.ID, 'reference-search').send_keys('Qwen')
                 assert '2 matching references' in driver.find_element(By.ID, 'reference-search-status').text
-                driver.find_element(By.ID, 'reference-search').clear()
+                driver.find_element(By.ID, 'reference-search').send_keys(Keys.CONTROL, 'a')
+                driver.find_element(By.ID, 'reference-search').send_keys(Keys.BACKSPACE)
                 driver.find_element(By.ID, 'reference-search').send_keys('MXFP4')
                 assert '1 matching reference' in driver.find_element(By.ID, 'reference-search-status').text
-                driver.find_element(By.ID, 'reference-search').clear()
+                driver.find_element(By.ID, 'reference-search').send_keys(Keys.CONTROL, 'a')
+                driver.find_element(By.ID, 'reference-search').send_keys(Keys.BACKSPACE)
                 Select(driver.find_element(By.ID, 'reference-status')).select_by_value('Draft')
                 assert '274 matching references' in driver.find_element(By.ID, 'reference-search-status').text
                 driver.find_element(By.ID, 'reference-search').send_keys('RTX 4090')
@@ -242,8 +245,9 @@ try:
                 assert '(1)' in driver.find_element(By.CSS_SELECTOR, '#hardware .reference-count').text
                 Select(driver.find_element(By.ID, 'reference-status')).select_by_value('Published')
                 assert 'No matching references' in driver.find_element(By.ID, 'reference-search-status').text
-                driver.find_element(By.ID, 'reference-search').clear()
-                assert '6 matching references' in driver.find_element(By.ID, 'reference-search-status').text
+                driver.find_element(By.ID, 'reference-search').send_keys(Keys.CONTROL, 'a')
+                driver.find_element(By.ID, 'reference-search').send_keys(Keys.BACKSPACE)
+                wait.until(lambda d: '6 matching references' in d.find_element(By.ID, 'reference-search-status').text)
             if any('/' + directory + '/' in page for directory in ['models', 'hardware', 'guides']):
                 assert driver.find_elements(By.CSS_SELECTOR, '.article-contents a')
                 assert driver.find_elements(By.CSS_SELECTOR, '.article-sources a')
