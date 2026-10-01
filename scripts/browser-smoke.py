@@ -179,6 +179,8 @@ try:
         assert driver.execute_script("return getComputedStyle(document.querySelector('.metric.speed')).display") != 'none'
         reference = wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '[data-reference-id="model-11"] a'))
         assert '/knowledge-preview/models/qwen2-5-coder-14b/' in reference.get_attribute('href')
+        hardware_reference = wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '.hardware-reference a'))
+        assert '/knowledge-preview/hardware/rtx-3060-12gb/' in hardware_reference.get_attribute('href')
         assert not driver.find_elements(By.CSS_SELECTOR, '[data-reference-id="model-10"] a'), 'Draft reference must stay hidden'
         driver.save_screenshot(f'browser-evidence/finder-{width}.png')
         driver.execute_script('window.scrollTo(0, document.body.scrollHeight)')
@@ -208,7 +210,8 @@ try:
         wait.until(lambda d: 'No matches for' in d.find_element(By.ID, 'catalog-count').text)
         search.clear(); search.send_keys('Qwen')
         wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, '.catalog-list .model-row')) > 0)
-        for page in ['knowledge.html', 'dist/methodology.html', 'dist/privacy.html', 'dist/terms.html', 'knowledge-preview/', 'knowledge-preview/models/qwen2-5-coder-14b/']:
+        article_keys = ['models/qwen3-8b', 'models/qwen2-5-coder-14b', 'models/gpt-oss-20b', 'hardware/rtx-3060-12gb', 'guides/q4-vs-q5', 'guides/context-length']
+        for page in ['knowledge.html', 'dist/methodology.html', 'dist/privacy.html', 'dist/terms.html', 'knowledge-preview/'] + ['knowledge-preview/' + key + '/' for key in article_keys]:
             driver.get(url + page)
             wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.site-topbar'))
             assert driver.execute_script('return document.documentElement.scrollWidth <= innerWidth'), f'{page} overflow at {width}'
@@ -224,11 +227,29 @@ try:
                 assert 'No matching references' in driver.find_element(By.ID, 'reference-search-status').text
                 driver.find_element(By.ID, 'reference-search').clear()
                 driver.find_element(By.ID, 'reference-search').send_keys('Qwen')
+                assert '2 matching references' in driver.find_element(By.ID, 'reference-search-status').text
+                driver.find_element(By.ID, 'reference-search').clear()
+                driver.find_element(By.ID, 'reference-search').send_keys('MXFP4')
                 assert '1 matching reference' in driver.find_element(By.ID, 'reference-search-status').text
-            if '/models/' in page:
+            if any('/' + directory + '/' in page for directory in ['models', 'hardware', 'guides']):
                 assert driver.find_elements(By.CSS_SELECTOR, '.article-contents a')
-                driver.save_screenshot(f'browser-evidence/article-{width}.png')
+                assert driver.find_elements(By.CSS_SELECTOR, '.article-sources a')
+                assert driver.find_elements(By.XPATH, '//h2[text()="Related references"]')
+                assert driver.find_elements(By.XPATH, '//h2[text()="Referenced by"]')
+                assert driver.find_element(By.CSS_SELECTOR, 'meta[name="robots"]').get_attribute('content') == 'noindex,nofollow'
+                assert driver.execute_script("return [...document.querySelectorAll('.article-contents a')].every(a => document.querySelector(a.getAttribute('href')) !== null)"), f'Broken heading link on {page}'
+                assert '[[' not in driver.find_element(By.CSS_SELECTOR, '.article-body').text, f'Unresolved wiki link on {page}'
+                driver.save_screenshot(f'browser-evidence/article-{page.strip("/").replace("/", "-")}-{width}.png')
         driver.save_screenshot(f'browser-evidence/knowledge-{width}.png')
+
+    # New entity mappings must appear in real comparison results, including an MoE model.
+    for name, entity_id, slug in [('Qwen3 8B', 'model-7', 'qwen3-8b'), ('gpt-oss-20b', 'extra-gpt-oss-20b', 'gpt-oss-20b')]:
+        driver.get(url + '#d=mac&m=32&t=coding&j=improve')
+        wait.until(lambda d: visible('#improve-results'))
+        current = driver.find_element(By.ID, 'current-model')
+        current.clear(); current.send_keys(name)
+        reference = wait.until(lambda d: d.find_element(By.CSS_SELECTOR, f'#improve-content [data-reference-id="{entity_id}"] a'))
+        assert f'/knowledge-preview/models/{slug}/' in reference.get_attribute('href')
 
     severe = []
     for entry in driver.get_log('browser'):

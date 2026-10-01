@@ -34,8 +34,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: to3b/local-llm-finder-knowledge
-          ref: 02f6f149cffea40d7d182bd6c8b5848549bdb25e
+          ref: 67bc10bb74d77b8ea370968bdb9ed966d6e0a34b
           path: knowledge
+
+      - name: Apply the staged Finder-link fix
+        run: git -C knowledge apply ../sandbox/content/finder-links.patch
+
+      - name: Build the staged article snapshot
+        working-directory: knowledge
+        env:
+          ARTICLES_CSV: ${{ github.workspace }}/sandbox/content/knowledge-articles.csv
+        run: node scripts/build-articles.mjs
 
       - name: Test Knowledge relationships
         working-directory: knowledge
@@ -67,11 +76,11 @@ jobs:
 
       - name: Prepare isolated staging build
         run: |
-          rm -f site/CNAME site/sitemap.xml site/dist/sitemap.xml
+          rm -f site/CNAME site/sitemap.xml site/dist/sitemap.xml site/knowledge-preview/sitemap.xml
           printf 'User-agent: *\nDisallow: /\n' > site/robots.txt
           printf 'User-agent: *\nDisallow: /\n' > site/dist/robots.txt
           find site -type f -name '*.html' -print0 | xargs -0 sed -i \
-            -e 's/content="index,follow,max-image-preview:large"/content="noindex,nofollow"/g' \
+            -e 's/<meta name="robots" content="[^"]*">/<meta name="robots" content="noindex,nofollow">/g' \
             -e 's|href="/"|href="/local-llm-finder-sandbox/"|g'
           touch site/.nojekyll
 

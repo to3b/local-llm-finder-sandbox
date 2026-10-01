@@ -1,0 +1,300 @@
+"Enabled","Type","Slug","Title","Summary","Body Markdown","Meta Title","Meta Description","Author","Date Published","Date Modified","Status","Canonical URL","Source URLs","Notes","Entity IDs","Related Articles"
+"TRUE","Model","qwen3-8b","Qwen3 8B","Official Q4/Q5/Q8 download sizes, native and extended context, and practical memory planning for Qwen3 8B.","## What Qwen3 8B is
+
+Qwen3-8B is a dense, text-generation model from Qwen. The [official model card](https://huggingface.co/Qwen/Qwen3-8B) lists 8.2 billion parameters and both thinking and non-thinking modes in the same checkpoint. It is a useful candidate for local chat, writing and coding experiments when a larger model would stretch the memory budget.
+
+This reference covers Qwen3-8B itself. Other Qwen3 sizes and later variants can have different requirements; check the full checkpoint name before downloading.
+
+## GGUF download sizes
+
+The [official Qwen GGUF file list](https://huggingface.co/Qwen/Qwen3-8B-GGUF/tree/main) gives these rounded download sizes:
+
+- Q4_K_M: 5.03 GB.
+- Q5_K_M: 5.85 GB.
+- Q8_0: 8.71 GB.
+
+These are decimal GB on disk. Runtime memory also includes the context cache, computation buffers and other allocations. A 5.03 GB download is therefore not a promise that the model runs entirely within 5.03 GB of VRAM.
+
+Q5_K_M adds about 0.82 GB of weights compared with this Q4_K_M build. On a tight budget, that extra space competes with context. See [[guides/q4-vs-q5|Q4 vs Q5]] for a practical way to choose.
+
+## VRAM and RAM planning
+
+As editorial planning guidance, an 8 GB GPU is a plausible starting point for a Q4_K_M build at a modest context. A 12 GB card provides more room for Q5_K_M, context and runtime buffers. Neither tier is a tested compatibility guarantee.
+
+Start at 4K context, close applications that use GPU memory, and check actual allocation in your runtime. If the model loads but fails when a longer prompt arrives, reduce context before assuming the download is corrupt. A smaller quant or partial CPU offload can also help, with a performance trade-off that depends on the backend.
+
+A Mac uses shared unified memory, and a CPU setup uses system RAM. Both need space for the operating system and other applications. Use the Finder's appropriate hardware mode instead of treating installed RAM as dedicated VRAM.
+
+The [[hardware/rtx-3060-12gb|RTX 3060 12 GB reference]] explains this capacity tier. [Compare your own setup in the Finder](https://localllmfinder.com/#f=Qwen3).
+
+## Native context versus extended context
+
+Qwen documents 32,768 tokens of native context and up to 131,072 with YaRN scaling. Extended context needs a runtime and configuration that implement the required scaling. Changing a context slider alone does not establish that the model will handle the longer input correctly.
+
+Local LLM Finder currently carries a 64K planning limit for this catalogue entry. That setting is an estimate input; it does not replace Qwen's native limit or verify your runtime's extended-context support.
+
+Budget for the whole conversation, including the response and thinking output. [[guides/context-length|The context-length guide]] explains why increasing the limit can increase memory use while the download stays the same size.
+
+## Thinking mode and local setup
+
+Qwen's model card describes a chat-template setting to enable or disable thinking, plus prompt switches in supported configurations. Confirm how your app exposes those controls. Reasoning output can consume tokens and time before the final answer appears.
+
+Use a supported runtime and the correct Qwen3 chat template. Start with the publisher's generation guidance, then compare a few prompts from your own workload. Review generated code and factual claims.
+
+The figures here support planning, not hardware benchmarking. Runtime version, cache format, offload and context settings can change the result.","Qwen3 8B VRAM, GGUF Sizes & Context | Local LLM Finder","Plan Qwen3 8B locally with official Q4/Q5/Q8 GGUF sizes, VRAM guidance, thinking-mode notes and native versus extended context limits.","Local LLM Finder","2026-10-01","2026-10-01","Published","https://knowledge.localllmfinder.com/models/qwen3-8b/","https://huggingface.co/Qwen/Qwen3-8B
+https://huggingface.co/Qwen/Qwen3-8B-GGUF/tree/main
+https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md","Completed missing reference at user request. Primary sources checked 2026-10-01. Hardware guidance is editorial planning, not measured benchmarks. Staged for verification before publication.","model-7","guides/q4-vs-q5, guides/context-length, hardware/rtx-3060-12gb, models/qwen2-5-coder-14b"
+"TRUE","Model","qwen2-5-coder-14b","Qwen2.5-Coder 14B","Quantized download sizes, context limits and practical memory planning for Qwen2.5-Coder-14B-Instruct.","## What this model is
+
+This reference covers Qwen2.5-Coder-14B-Instruct, the instruction-tuned coding model. Qwen lists 14.7 billion parameters. It is designed for code generation, explanation and fixing, rather than being a guaranteed replacement for running tests or reviewing changes.
+
+Use the Instruct version for conversational coding help. The separate base model is a different checkpoint.
+
+## Quantized download sizes
+
+Qwen's official GGUF repository lists these approximate sizes:
+
+- Q4_K_M: 8.99 GB.
+- Q5_K_M: 10.5 GB.
+- Q8_0: 15.7 GB.
+
+These are download sizes in decimal GB, not complete VRAM requirements. Other conversions can differ, so check the exact file you choose.
+
+Q4_K_M is a practical starting point when memory is tight. Q5_K_M retains more precision but leaves less room for context. Choosing a larger quantization does not guarantee better results for every task.
+
+## Memory and hardware planning
+
+The runtime needs memory for model weights, the context/KV cache and other buffers. A file that fits on disk may still exceed your available GPU memory when loaded.
+
+As planning guidance, a 12 GB GPU is a plausible starting point for Q4_K_M with a modest context. A 16 GB GPU offers more headroom for Q5_K_M or longer prompts. These are estimates, not measured compatibility guarantees.
+
+CPU offload can help when GPU memory is insufficient, but performance depends on the CPU, memory bandwidth and backend. Unified-memory Macs share memory with the operating system and other applications; total installed memory is not the entire model budget.
+
+Start with 4K or 8K context and check actual usage before increasing it. [Compare your hardware in the Finder](https://localllmfinder.com/#t=coding).
+
+## Context limits
+
+Qwen advertises up to 131,072 tokens, while the standard Instruct configuration starts at 32,768. Longer contexts require appropriate scaling and runtime support. Do not assume a GGUF build or local app supports the full advertised limit automatically.
+
+A supported context ceiling also does not mean your hardware has enough memory to use it.
+
+## Before using it
+
+Download from the [official model page](https://huggingface.co/Qwen/Qwen2.5-Coder-14B-Instruct) or the [official GGUF repository](https://huggingface.co/Qwen/Qwen2.5-Coder-14B-Instruct-GGUF). Check your runtime's supported format and chat template.
+
+The publisher lists Apache 2.0 licensing. Consult the model's licence for your intended use.
+
+Review generated code, run tests and check dependencies. Local LLM Finder's memory and speed figures are planning estimates; this reference does not claim hardware benchmarks.","Qwen2.5-Coder 14B: Memory & Context | Local LLM Finder","Qwen2.5-Coder 14B local reference: Q4/Q5/Q8 download sizes, context limits, VRAM planning and official sources.","Local LLM Finder","2026-10-01","2026-10-01","Published","https://knowledge.localllmfinder.com/models/qwen2-5-coder-14b/","https://huggingface.co/Qwen/Qwen2.5-Coder-14B-Instruct
+https://huggingface.co/Qwen/Qwen2.5-Coder-14B-Instruct-GGUF","Published at user request. Official specifications and GGUF sizes checked 2026-10-01. Hardware tiers are editorial planning guidance, not benchmarks.","model-11","guides/q4-vs-q5, guides/context-length, hardware/rtx-3060-12gb"
+"TRUE","Model","gpt-oss-20b","gpt-oss-20b","Understand total versus active parameters, MXFP4 checkpoint size, Harmony support and local memory requirements.","## What gpt-oss-20b is
+
+gpt-oss-20b is OpenAI's open-weight, text-only reasoning model. It uses a mixture-of-experts architecture rather than activating all its parameters for every token.
+
+The [OpenAI model card](https://deploymentsafety.openai.com/gpt-oss/a2) lists about 20.9 billion total parameters and 3.6 billion active parameters per token. The active count describes which parameters participate in a forward pass. It does not mean only that many weights need to be stored.
+
+That distinction matters when comparing it with a dense model such as [[models/qwen3-8b|Qwen3 8B]]. A lower active count can reduce some computation, but it is not a shortcut for predicting total RAM, VRAM or tokens per second.
+
+## Checkpoint size and MXFP4
+
+The model card lists a checkpoint size of 12.8 GiB, approximately 13.7 decimal GB. Checkpoint size is separate from runtime memory.
+
+The [official Hugging Face page](https://huggingface.co/openai/gpt-oss-20b) explains that the expert weights use MXFP4 quantization and that the model can run within 16 GB of memory in supported configurations. This is a publisher deployment claim, not a guarantee for every backend, context setting or 16 GB computer.
+
+MXFP4 is not the same format as a GGUF Q4_K_M conversion. Do not assume any download with a “4-bit” label preserves the publisher's memory footprint or execution path. Check the exact artifact and your runtime's gpt-oss support.
+
+The [[guides/q4-vs-q5|quantization guide]] explains why precision labels alone cannot settle a hardware comparison.
+
+## Practical memory planning
+
+Treat 16 GB as a starting tier to investigate with a compatible runtime and modest context. Reserve space for cache and buffers, and remember that installed system or unified memory is also shared with the operating system.
+
+A 12 GB GPU has less capacity than the published checkpoint size alone. This reference therefore does not promise full GPU residency on an [[hardware/rtx-3060-12gb|RTX 3060 12 GB]]. Some runtimes can distribute work across CPU and GPU memory; actual speed and allocation need to be checked.
+
+Local LLM Finder uses a general planning model for quantization and context. Its Q4/Q5 choices for this catalogue entry should not be read as certification that a matching native MXFP4 artifact exists or has the same requirements. Verify the available format before downloading or buying hardware.
+
+[Explore your hardware in the Finder](https://localllmfinder.com/#f=GPT-OSS), then confirm the proposed setup in the runtime you intend to use.
+
+## Context and reasoning effort
+
+OpenAI documents a context window of up to 131,072 tokens. The local application's supported and configured context can be lower, and sufficient memory is a separate requirement.
+
+The catalogue currently uses 64K for planning. A model's published ceiling is not a recommendation to reserve the maximum context for every conversation. Start with a smaller allocation, test your workload, and increase it when needed. See [[guides/context-length|context length and memory]].
+
+The model supports low, medium and high reasoning effort. A higher setting can spend more tokens before delivering the answer. Compare time to a useful answer as well as visible generation speed.
+
+## Use a compatible chat format
+
+OpenAI specifies the Harmony conversation format for gpt-oss. Use a runtime that applies the appropriate template and correctly handles reasoning and final-answer channels. Feeding it a generic chat template can produce misleading results even when the weights load.
+
+Download through the [official model page](https://huggingface.co/openai/gpt-oss-20b), follow the runtime's supported setup, and test ordinary chat and your intended task before integrating tools. Tool descriptions do not execute functions by themselves; your application supplies that integration.
+
+Memory and speed guidance here is for planning. It is not an RTX 3060, Mac or CPU benchmark.","gpt-oss-20b Memory, MXFP4 & Context | Local LLM Finder","Understand gpt-oss-20b local requirements: total versus active parameters, MXFP4 size, 16 GB deployment claims, context and Harmony runtime support.","Local LLM Finder","2026-10-01","2026-10-01","Published","https://knowledge.localllmfinder.com/models/gpt-oss-20b/","https://deploymentsafety.openai.com/gpt-oss/a2
+https://huggingface.co/openai/gpt-oss-20b
+https://openai.com/index/introducing-gpt-oss/","Completed missing reference at user request. Primary sources checked 2026-10-01. Hardware guidance is editorial planning, not measured benchmarks. Staged for verification before publication.","extra-gpt-oss-20b","guides/context-length, guides/q4-vs-q5, models/qwen3-8b, hardware/rtx-3060-12gb"
+"TRUE","Hardware","rtx-3060-12gb","RTX 3060 12 GB","Local LLM capacity planning for the desktop 12 GB RTX 3060, with model examples, context trade-offs and offload checks.","## What the 12 GB RTX 3060 offers
+
+The GeForce RTX 3060 12 GB provides a useful capacity tier for local language-model experiments: enough dedicated memory to investigate many quantized small and medium models without moving immediately to a larger card.
+
+This article covers the desktop 12 GB version. [NVIDIA's specifications](https://www.nvidia.com/en-us/geforce/graphics-cards/30-series/rtx-3060-3060ti/) also list an 8 GB RTX 3060, with a different memory interface. The RTX 3060 Ti is another model and is listed with 8 GB. A shared “3060” name does not establish the same memory budget.
+
+Check the exact card in your system before choosing it in the Finder. The Finder's catalogue ID for the desktop 12 GB model is `rtx-3060`; the article URL includes “12gb” to make its scope clear.
+
+## Which models are plausible candidates?
+
+These are planning examples based on published download sizes, not measured results on this GPU:
+
+- [[models/qwen3-8b|Qwen3 8B]]: its official Q4_K_M download is about 5.03 GB and Q5_K_M about 5.85 GB. Both leave more capacity for context and buffers than a larger model's weights.
+- [[models/qwen2-5-coder-14b|Qwen2.5-Coder 14B]]: the official Instruct GGUF lists Q4_K_M at about 8.99 GB. It is a plausible short-context candidate, but needs closer attention to available VRAM.
+- [[models/gpt-oss-20b|gpt-oss-20b]]: the publisher lists a 12.8 GiB checkpoint. Full GPU residency is not promised on a 12 GB card; compatible offload or a different memory tier needs investigation.
+
+The size of a download is only the starting point. The runtime must also allocate the context/KV cache, working buffers and any additional components. Desktop applications and the display can use part of the card's memory.
+
+## Start with a modest context
+
+For a first test, choose one known artifact and a 4K context limit. Read the runtime's load log or memory display, then try a representative prompt with enough room for the reply.
+
+Increase to 8K only if it serves your task and you have checked the allocation. If the runtime runs out of memory, reducing context can help even though you are loading the same file. [[guides/context-length|Context length]] explains this relationship.
+
+A 14B Q5 build leaves less space than Q4. That does not make it unusable in every setup, but it makes a promise of full GPU offload at long context particularly unreliable.
+
+## Capacity and speed are different questions
+
+VRAM capacity determines how much can reside on the card. Generation speed also depends on model architecture, memory bandwidth, prompt processing, backend kernels and how much work remains on the CPU.
+
+A card can fit a larger quant and still feel slow for your task. Conversely, a smaller model may be more useful if it responds quickly enough and produces adequate answers. This page does not supply tokens-per-second benchmarks.
+
+If some layers are offloaded to the CPU, include system RAM and CPU performance in the assessment. Shared memory reported by an operating system is not additional dedicated VRAM with the same bandwidth.
+
+## Q4, Q5 and a practical check
+
+Use [[guides/q4-vs-q5|Q4 vs Q5]] to choose a starting quant. Prioritize a configuration that leaves room for the context you actually need, then compare quality on your own prompts.
+
+- Select the exact RTX 3060 12 GB in the Finder.
+- Set the task and context length.
+- Read the linked model reference and verify the download format.
+- Load the model in a supported runtime and check memory use.
+- Record the quant, context, offload and runtime version when comparing results.
+
+[Open the Finder with this GPU selected](https://localllmfinder.com/#d=gpu&g=rtx-3060&v=12). A recommendation is a planning estimate that you can test, not evidence that every 12 GB configuration behaves identically.","RTX 3060 12 GB for Local LLMs | Local LLM Finder","See what the RTX 3060 12 GB can plausibly run: Qwen3 8B and coding-model examples, VRAM limits, context planning and practical runtime checks.","Local LLM Finder","2026-10-01","2026-10-01","Published","https://knowledge.localllmfinder.com/hardware/rtx-3060-12gb/","https://www.nvidia.com/en-us/geforce/graphics-cards/30-series/rtx-3060-3060ti/
+https://huggingface.co/Qwen/Qwen3-8B-GGUF/tree/main
+https://huggingface.co/Qwen/Qwen2.5-Coder-14B-Instruct-GGUF/tree/main
+https://deploymentsafety.openai.com/gpt-oss/a2
+https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md","Completed missing reference at user request. Primary sources checked 2026-10-01. Hardware guidance is editorial planning, not measured benchmarks. Staged for verification before publication.","rtx-3060","models/qwen3-8b, models/qwen2-5-coder-14b, models/gpt-oss-20b, guides/q4-vs-q5, guides/context-length"
+"TRUE","Guide","q4-vs-q5","Q4 vs Q5","Choose between Q4_K_M and Q5_K_M using real file sizes, memory headroom, context needs and a practical quality comparison.","## What Q4 and Q5 mean
+
+Quantization stores model weights with reduced precision to lower their memory and download requirements. In common GGUF filenames, Q4_K_M and Q5_K_M describe different quantization recipes used by llama.cpp.
+
+Q4_K_M is usually the smaller choice for the same checkpoint and conversion family. Q5_K_M generally stores more precision and needs more space. The labels do not mean every value is stored in exactly four or five bits: scales, metadata and tensors treated at other precisions also contribute.
+
+The [llama.cpp quantization implementation](https://github.com/ggml-org/llama.cpp/blob/master/src/llama-quant.cpp) defines these recipes. Different formats with a “4-bit” label, such as the MXFP4 expert weights in [[models/gpt-oss-20b|gpt-oss-20b]], should not be treated as interchangeable.
+
+## A real download-size comparison
+
+Qwen's [official Qwen3 8B GGUF file list](https://huggingface.co/Qwen/Qwen3-8B-GGUF/tree/main) shows:
+
+- Q4_K_M: about 5.03 GB.
+- Q5_K_M: about 5.85 GB.
+- Difference: about 0.82 GB, or 16% more weights than Q4_K_M.
+
+These rounded decimal sizes are specific to that model and conversion. Q5 is not universally 16% or 25% larger. Compare the actual files for the checkpoint you want.
+
+For the larger [[models/qwen2-5-coder-14b|Qwen2.5-Coder 14B]], the extra weight memory is more consequential on a tight GPU budget. The trade-off should be assessed alongside context, rather than choosing a quant by name alone.
+
+## File size is not total runtime memory
+
+Loading a quantized model also needs working buffers and the context/KV cache. Some runtimes reserve capacity for the configured context when loading; others grow allocations as they process tokens.
+
+Reducing the precision of the model weights does not automatically change the precision of the KV cache. These are separate settings in runtimes such as [llama.cpp](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md).
+
+If Q5 fits at 4K but fails at 16K, the longer context may account for the difference. The download has not changed. See [[guides/context-length|why context length affects memory]].
+
+## When to start with Q4_K_M
+
+Q4_K_M is a sensible initial test when memory is constrained, when you need to retain a useful context, or when Q5 would require additional CPU offload.
+
+For example, an [[hardware/rtx-3060-12gb|RTX 3060 12 GB]] running a larger model has less room for extra precision than the same card running [[models/qwen3-8b|Qwen3 8B]]. Check the runtime's actual allocation instead of assuming all installed VRAM is available.
+
+A smaller quant that stays within the intended device budget may be more convenient than a larger one that changes the offload arrangement. This is a testable setup choice, not a universal speed ranking.
+
+## When Q5_K_M is worth testing
+
+Try Q5_K_M when you have enough space for weights, context and buffers, and you want to compare whether it helps your workload. More stored precision can reduce quantization error, but it does not guarantee that every answer improves.
+
+Use the same model version, chat template and generation settings. For coding, compare correctness with tests. For extraction, compare against known answers. For writing, judge the result against the constraints you actually care about.
+
+Avoid comparing one Q4 model with a different Q5 model and attributing the whole difference to quantization.
+
+## A practical comparison
+
+Begin with Q4_K_M and a representative context length. Record memory use, time to the first useful response and the outcome on several prompts. Repeat with Q5_K_M while keeping the other settings fixed.
+
+If the Q5 setup changes CPU offload, record that too; it is part of the result. Keep the quant that delivers useful output within your memory and latency needs.
+
+[Compare memory estimates in the Finder](https://localllmfinder.com/). The final decision should use the exact artifact and runtime, rather than a generic claim that one quant is always best.","Q4 vs Q5: GGUF Size & Quality | Local LLM Finder","Compare Q4_K_M and Q5_K_M for local LLMs: real GGUF sizes, weight versus runtime memory, context trade-offs and a practical quality test.","Local LLM Finder","2026-10-01","2026-10-01","Published","https://knowledge.localllmfinder.com/guides/q4-vs-q5/","https://github.com/ggml-org/llama.cpp/blob/master/tools/quantize/README.md
+https://github.com/ggml-org/llama.cpp/blob/master/src/llama-quant.cpp
+https://huggingface.co/Qwen/Qwen3-8B-GGUF/tree/main
+https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md
+https://huggingface.co/openai/gpt-oss-20b","Completed missing reference at user request. Primary sources checked 2026-10-01. Hardware guidance is editorial planning, not measured benchmarks. Staged for verification before publication.","","guides/context-length, models/qwen3-8b, models/qwen2-5-coder-14b, models/gpt-oss-20b, hardware/rtx-3060-12gb"
+"TRUE","Guide","context-length","Context length","Why longer context increases runtime memory, how KV caches differ from weights, and how to check a useful local context limit.","## What context length includes
+
+A model's context window is the token budget available for the conversation it processes. It includes instructions, chat history, pasted documents, tool results and generated output. Reasoning output can consume that budget too.
+
+Tokens are pieces of encoded text, not a fixed number of words. Leave room for the reply instead of filling the entire window with input. A conversation that approaches the limit may be truncated, rejected or handled with a runtime-specific shifting mechanism.
+
+## Three limits to check
+
+There are three separate questions:
+
+- What context does the model publisher document?
+- What context does the downloaded artifact and runtime support and configure?
+- What context can your hardware hold at the selected quant and workload?
+
+For example, [[models/qwen3-8b|Qwen3 8B]] documents 32,768 tokens natively and an extended 131,072 with YaRN. A higher slider value does not itself implement that scaling.
+
+[[models/gpt-oss-20b|gpt-oss-20b]] also has a published long-context ceiling, but the local memory budget and runtime configuration still need to be checked. Local LLM Finder's catalogue limit is an estimate input, not proof that a particular app implements the full model limit.
+
+## Why the same file needs more memory
+
+During autoregressive generation, attention uses a key/value cache so the model can reuse information from earlier tokens. The [Hugging Face cache documentation](https://huggingface.co/docs/transformers/en/kv_cache) describes cache strategies and their memory trade-offs.
+
+For ordinary full-attention layers, a useful first approximation is that KV-cache storage increases with the number of cached tokens, layer count, key/value heads, head size and bytes per cache value. Grouped-query attention changes the head count that matters.
+
+Models with sliding-window attention, compressed caches or other architectures can behave differently. Batching and simultaneous conversations also change the memory budget. A simple per-token estimate is therefore guidance, not a universal allocation formula.
+
+The weights file stays the same size when you raise context. The cache and other runtime allocations are what change.
+
+## An illustrative memory budget
+
+Consider a hypothetical setup with 5 GB of weights, 0.5 GB of other allocations and a full-attention cache that uses 0.75 GB at 4K tokens:
+
+- At 4K, the example totals 6.25 GB.
+- At 16K, four times as many cached tokens would use about 3 GB of cache.
+- The example then totals 8.5 GB, while the weights remain 5 GB.
+
+These numbers explain the relationship; they are not measurements of Qwen3, gpt-oss or an RTX 3060. Real runtimes can allocate buffers differently or reserve the configured cache up front.
+
+## Weight quantization and cache quantization are separate
+
+Choosing Q4_K_M instead of Q5_K_M primarily changes stored weights. It does not automatically lower the KV-cache precision. [llama.cpp's server documentation](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md) exposes context and key/value cache controls separately.
+
+Cache quantization or offload can reduce device-memory pressure in supported configurations, but may affect performance or output. Verify support for your model and backend before changing those controls.
+
+[[guides/q4-vs-q5|Q4 vs Q5]] covers the weight trade-off. Keeping a useful context can matter more to your task than spending the last available memory on a larger quant.
+
+## Set a useful context and verify it
+
+For an initial local test, 4K is a manageable starting point when your task fits. Increase it for longer conversations or documents after checking memory, the model limit and the runtime's configuration.
+
+In Ollama, the [context-length documentation](https://docs.ollama.com/context-length) explains configuration and checking the allocated context with `ollama ps`. Other runtimes have their own logs and controls. Defaults can change, so check the allocation rather than assuming it matches the publisher's maximum.
+
+- Choose a representative prompt and reserve reply space.
+- Record quant, context and CPU/GPU offload.
+- Test a longer prompt, not only an empty conversation.
+- Reduce context or shorten the retained history if you exceed memory.
+- Compare time to a useful answer as well as whether the model loads.
+
+On an [[hardware/rtx-3060-12gb|RTX 3060 12 GB]], this check can make the difference between a practical configuration and an allocation failure. [Use the Finder to compare context estimates](https://localllmfinder.com/), then confirm them in your runtime.","LLM Context Length & VRAM Explained | Local LLM Finder","Learn why longer LLM context needs more memory, how KV cache differs from model weights, and how to verify model, runtime and hardware limits.","Local LLM Finder","2026-10-01","2026-10-01","Published","https://knowledge.localllmfinder.com/guides/context-length/","https://huggingface.co/docs/transformers/en/kv_cache
+https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md
+https://docs.ollama.com/context-length
+https://huggingface.co/Qwen/Qwen3-8B
+https://huggingface.co/openai/gpt-oss-20b","Completed missing reference at user request. Primary sources checked 2026-10-01. Hardware guidance is editorial planning, not measured benchmarks. Staged for verification before publication.","","guides/q4-vs-q5, models/qwen3-8b, models/qwen2-5-coder-14b, models/gpt-oss-20b, hardware/rtx-3060-12gb"
