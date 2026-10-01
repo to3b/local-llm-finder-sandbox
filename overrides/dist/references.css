@@ -1,0 +1,3 @@
+.reference-slot{display:block;font-size:.875rem;font-weight:400;margin-top:6px}.reference-slot:empty,.reference-slot[hidden]{display:none}
+.reference-slot a,.hardware-reference a{color:var(--accent,#9cbfff);text-decoration:underline;text-underline-offset:3px}
+.hardware-reference{margin:12px 0 0;font-size:.875rem}.hardware-reference[hidden]{display:none}

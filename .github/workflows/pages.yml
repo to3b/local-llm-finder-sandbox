@@ -34,8 +34,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: to3b/local-llm-finder-knowledge
-          ref: 1a10ffd513d1047b0db77cc7620e0a8fddcb2703
+          ref: 02f6f149cffea40d7d182bd6c8b5848549bdb25e
           path: knowledge
+
+      - name: Test Knowledge relationships
+        working-directory: knowledge
+        run: node tests/wiki.test.mjs
 
       - name: Apply sandbox overrides
         run: |

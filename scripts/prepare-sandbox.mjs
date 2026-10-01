@@ -216,4 +216,6 @@ copyTune = copyTune.replace(priorityFunction, `${enhancedPriority}\n\nfunction s
 write('dist/copy-tune.js', copyTune);
 
 await import('./apply-cleanup.mjs');
+process.env.KNOWLEDGE_BASE = basePath + 'knowledge-preview/';
+await import('./connect-finder.mjs');
 console.log('Sandbox UI cleanup applied.');

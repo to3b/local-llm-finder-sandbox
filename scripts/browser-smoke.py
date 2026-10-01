@@ -177,6 +177,9 @@ try:
         assert all(link.is_displayed() for link in driver.find_elements(By.CSS_SELECTOR, '.site-nav a')), f'Hidden Finder navigation at {width}'
         assert driver.execute_script("return getComputedStyle(document.body).backgroundImage") == 'none'
         assert driver.execute_script("return getComputedStyle(document.querySelector('.metric.speed')).display") != 'none'
+        reference = wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '[data-reference-id="model-11"] a'))
+        assert '/knowledge-preview/models/qwen2-5-coder-14b/' in reference.get_attribute('href')
+        assert not driver.find_elements(By.CSS_SELECTOR, '[data-reference-id="model-10"] a'), 'Draft reference must stay hidden'
         driver.save_screenshot(f'browser-evidence/finder-{width}.png')
         driver.execute_script('window.scrollTo(0, document.body.scrollHeight)')
         driver.save_screenshot(f'browser-evidence/finder-footer-{width}.png')
@@ -205,7 +208,7 @@ try:
         wait.until(lambda d: 'No matches for' in d.find_element(By.ID, 'catalog-count').text)
         search.clear(); search.send_keys('Qwen')
         wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, '.catalog-list .model-row')) > 0)
-        for page in ['knowledge.html', 'dist/methodology.html', 'dist/privacy.html', 'dist/terms.html', 'knowledge-preview/']:
+        for page in ['knowledge.html', 'dist/methodology.html', 'dist/privacy.html', 'dist/terms.html', 'knowledge-preview/', 'knowledge-preview/models/qwen2-5-coder-14b/']:
             driver.get(url + page)
             wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.site-topbar'))
             assert driver.execute_script('return document.documentElement.scrollWidth <= innerWidth'), f'{page} overflow at {width}'
@@ -216,6 +219,15 @@ try:
             assert driver.execute_script("return [...document.querySelectorAll('.preview-card, .doc-summary-card, .doc-callout')].every(el => getComputedStyle(el).borderRadius === '0px')"), f'Rounded panel on {page}'
             if page == 'knowledge.html':
                 driver.save_screenshot(f'browser-evidence/knowledge-legacy-{width}.png')
+            if page == 'knowledge-preview/':
+                driver.find_element(By.ID, 'reference-search').send_keys('nothing-matches-this')
+                assert 'No matching references' in driver.find_element(By.ID, 'reference-search-status').text
+                driver.find_element(By.ID, 'reference-search').clear()
+                driver.find_element(By.ID, 'reference-search').send_keys('Qwen')
+                assert '1 matching reference' in driver.find_element(By.ID, 'reference-search-status').text
+            if '/models/' in page:
+                assert driver.find_elements(By.CSS_SELECTOR, '.article-contents a')
+                driver.save_screenshot(f'browser-evidence/article-{width}.png')
         driver.save_screenshot(f'browser-evidence/knowledge-{width}.png')
 
     severe = []
