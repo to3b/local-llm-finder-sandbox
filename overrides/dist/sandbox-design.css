@@ -1,0 +1,73 @@
+/* Shared sandbox design: Finder, Knowledge, articles, contributions and owner review. */
+:root {
+  color-scheme: dark;
+  --page: #151719;
+  --bg: var(--page);
+  --surface: #202326;
+  --surface-raised: #292d31;
+  --line: #3b4147;
+  --line-strong: #59626b;
+  --text: #f3f4ef;
+  --muted: #bcc2c7;
+  --quiet: #929aa1;
+  --accent: #9cbfff;
+  --focus: var(--accent);
+  --selection: #d6dadd;
+  --selected: #303438;
+  --selected-bg: #303438;
+  --selected-border: #7a838a;
+  --selected-mark: #d6dadd;
+}
+*, *::before, *::after { box-sizing: border-box; border-radius: 0 !important; }
+body {
+  background-color: var(--page) !important;
+  background-image: none !important;
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+}
+.app-shell, .docs-shell, .test-shell, .review-shell {
+  width: min(100%, 900px);
+  max-width: 900px;
+  margin-inline: auto;
+  padding-inline: 28px;
+}
+.site-topbar, .test-topbar, .review-shell > header {
+  min-height: 62px;
+  border-bottom: 1px solid var(--line);
+}
+.site-brand, .brand { color: var(--text); font-size: 1rem; font-weight: 650; letter-spacing: -.02em; }
+input, select, textarea { color: var(--text); background-color: var(--surface); }
+.primary, .doc-button.primary { background: var(--selection); border-color: var(--selection); color: var(--page); }
+.site-nav a, .test-topbar nav a { font-size: .875rem; }
+.site-nav a, .test-topbar nav a, .test-nav a, .doc-button, button, summary {
+  min-height: 44px;
+}
+.doc-hero h1, .test-heading h1, .review-shell > h1 {
+  font-size: clamp(28px, 3vw, 36px);
+  line-height: 1.15;
+  letter-spacing: -.035em;
+  font-weight: 650;
+}
+.doc-lede, .article-body p, .article-body li, .doc-section p, .doc-section li,
+.test-heading > p:not(.eyebrow), .result-note p { font-size: 1rem; line-height: 1.68; }
+.breadcrumbs, .article-contents, .reference-tools label, .reference-tools input,
+.reference-tools select, .field label, .test-nav a, .guide-panel summary { font-size: .875rem; }
+.article-body a, .article-sources a, .article-test-invite a { color: var(--accent); }
+.article-test-invite { margin-top: 24px; padding: 24px 0; border-top: 1px solid var(--line); }
+.article-test-invite h2 { margin: 0 0 8px; font-size: 1.12rem; font-weight: 620; }
+.article-test-invite p { margin: 0 0 14px; color: var(--muted); font-size: 1rem; }
+.article-return { margin: 14px 0 0; font-size: .875rem; }
+.baseline-prompt { margin: 22px 0; border-top: 1px solid var(--line); padding-top: 18px; }
+.baseline-prompt h3 { margin: 0 0 8px; font-size: 1rem; font-weight: 620; }
+.baseline-prompt blockquote { margin: 12px 0; padding: 12px 16px; border-left: 2px solid var(--line-strong); background: var(--surface); font-size: 1rem; }
+.baseline-prompt button { margin-top: 8px; }
+.baseline-status { color: var(--muted); font-size: .875rem; }
+.test-heading { padding: 24px 0 20px; }
+@media (max-width: 700px) {
+  .app-shell, .docs-shell, .test-shell, .review-shell { padding-inline: 18px; }
+  .site-topbar, .test-topbar { flex-wrap: wrap; gap: 8px; padding-block: 10px; }
+  .site-nav, .test-topbar nav { flex-wrap: wrap; gap: 16px; }
+  .site-nav a { display: inline-flex !important; }
+}

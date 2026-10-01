@@ -5,7 +5,7 @@ Knowledge preview base: `to3b/local-llm-finder-knowledge@1a10ffd513d1047b0db77cc
 
 ## Community tests approval gate
 
-The October community-tests addition is sandbox-only. `prepare-sandbox.mjs` connects it only when `SITE_BASE` contains `sandbox`; the production exporter copies only its existing UI stylesheet overrides and does not include `tests/` or `test-links.js`. The live Finder, Knowledge, content Sheet and calibration table are unchanged.
+The October community-tests addition is sandbox-only. `prepare-sandbox.mjs` connects it only when `SITE_BASE` contains `sandbox`; the production exporter copies only its existing UI stylesheet overrides and does not include `tests/`, contextual contribution invitations or the final sandbox design stylesheet. The live Finder, Knowledge, content Sheet and calibration table are unchanged.
 
 Before promotion, the owner reviews the form, test instructions, privacy explanation, moderation flow and mobile experience. Then create a separate production submission environment, set its owner secrets and approved frontend origins, and explicitly port the navigation/actions. Do not mix synthetic sandbox checks into production hardware evidence.
 

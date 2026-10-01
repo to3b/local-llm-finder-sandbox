@@ -218,5 +218,5 @@ write('dist/copy-tune.js', copyTune);
 await import('./apply-cleanup.mjs');
 process.env.KNOWLEDGE_BASE = basePath + 'knowledge-preview/';
 await import('./connect-finder.mjs');
-if(basePath.includes('sandbox'))await import('./connect-community-tests.mjs');
+if(basePath.includes('sandbox')){await import('./connect-community-tests.mjs');await import('./align-design.mjs');}
 console.log('Sandbox UI cleanup applied.');

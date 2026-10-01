@@ -26,16 +26,26 @@ def fixture(mode='success',reports=None):
     };''',mode,reports or [])
 
 try:
-    get('#d=gpu&g=rtx-3060&v=12&t=coding&r=32')
-    wait.until(lambda d:d.find_elements(By.CSS_SELECTOR,'.model-row'))
-    row=driver.find_element(By.CSS_SELECTOR,'.model-row');row.find_element(By.TAG_NAME,'summary').click()
-    share=row.find_element(By.CSS_SELECTOR,'[data-share-test]');model_id=share.get_attribute('data-share-test');share.click()
+    get('knowledge-preview/models/qwen3-8b/')
+    assert not driver.find_elements(By.CSS_SELECTOR,'nav[aria-label="Site"] a[href*="/tests/"]')
+    invite=driver.find_element(By.CSS_SELECTOR,'.article-test-invite')
+    assert 'Have you tried this LLM?' in invite.text
+    invite.find_element(By.TAG_NAME,'a').click()
     wait.until(lambda d:d.find_elements(By.ID,'test-form'))
-    assert 'hardware=rtx-3060' in driver.current_url and 'model='+model_id in driver.current_url
-    wait.until(lambda d:'3060' in d.find_element(By.ID,'hardware').get_attribute('value'))
-    assert driver.find_element(By.ID,'model').get_attribute('value')
+    assert 'model=model-7' in driver.current_url and 'from=models%2Fqwen3-8b' in driver.current_url
+    wait.until(lambda d:'Qwen3' in d.find_element(By.ID,'model').get_attribute('value'))
+    assert driver.find_element(By.ID,'hardware').get_attribute('value')==''
+    hardware=json.loads(Path('site/tests/catalogue.json').read_text())['hardware']
+    driver.find_element(By.ID,'hardware').send_keys(next(x['name'] for x in hardware if x['id']=='rtx-3060'))
+    assert driver.find_element(By.ID,'article-return').is_displayed()
     assert driver.find_element(By.ID,'contextTokens').get_attribute('value')=='','Planner context must not be presented as an actual tested setting'
     assert not driver.find_element(By.ID,'extra-details').get_attribute('open')
+    driver.find_element(By.CSS_SELECTOR,'a[href="#test-guide"]').click()
+    wait.until(lambda d:d.find_element(By.ID,'test-guide').get_attribute('open'))
+    assert len(driver.find_elements(By.CSS_SELECTOR,'.baseline-prompt'))==2
+    driver.find_element(By.CSS_SELECTOR,'.baseline-prompt button').click()
+    assert driver.find_element(By.ID,'testScenario').get_attribute('value')=='baseline-writing-v1'
+    assert not driver.find_elements(By.CSS_SELECTOR,'[name="response"],[name="reply"],[name="answer"]')
     fixture('fail')
     driver.find_element(By.ID,'submit-test').click()
     wait.until(lambda d:d.find_element(By.ID,'form-error').is_displayed())
@@ -56,6 +66,7 @@ try:
     assert sent['generationTps']==24.5 and sent['hardwareId']=='rtx-3060'
     assert 'PRIVATE' not in json.dumps(sent) and 'rawLog' not in sent
     assert sent['calibrationEligible'] is False
+    assert sent['testScenario']=='baseline-writing-v1'
     assert 'Awaiting review' in driver.find_element(By.ID,'success').text
     driver.save_screenshot(str(evidence/'community-saved.png'))
     driver.find_element(By.ID,'another').click()
@@ -84,5 +95,10 @@ try:
     assert 'first reviewed results' in driver.find_element(By.ID,'reviewed-results').text
     assert driver.execute_script('return document.documentElement.scrollWidth<=innerWidth')
     driver.save_screenshot(str(evidence/'community-results-empty.png'))
-    print('Community browser checks passed: Finder prefill, minimal required input, pasted-speed privacy, failure/retry, durable-receipt UI, no-load reports, empty results and responsive layouts.')
+    get('knowledge-preview/hardware/rtx-3060-12gb/')
+    driver.find_element(By.CSS_SELECTOR,'.article-test-invite a').click()
+    wait.until(lambda d:'3060' in d.find_element(By.ID,'hardware').get_attribute('value'))
+    assert 'hardware=rtx-3060' in driver.current_url
+    assert driver.find_element(By.ID,'model').get_attribute('value')==''
+    print('Community browser checks passed: article prefill, baseline prompts, minimal required input, pasted-speed privacy, failure/retry, durable-receipt UI, no-load reports, empty results and responsive layouts.')
 finally:driver.quit()

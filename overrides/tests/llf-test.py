@@ -9,6 +9,9 @@ BASE='http://127.0.0.1:11434'
 PROMPT=('Write a practical guide for someone organizing a small home library. '
         'Explain how to sort books, label shelves, track borrowed books, and maintain the system. '
         'Give concrete examples and continue for at least 250 words. Do not use tools.')
+CODE_PROMPT=('Write a Python function that accepts a list of dictionaries containing title, author, and year, '
+             'then groups the books by author and sorts each group by year. Include input validation and a short '
+             'example showing the result. Do not use external packages or tools.')
 
 def api(path,body=None):
     data=json.dumps(body).encode() if body is not None else None
@@ -25,6 +28,7 @@ def hardware_name():
 def main():
     parser=argparse.ArgumentParser(description='Test an installed Ollama model. Saves a file; never uploads it.')
     parser.add_argument('--model');parser.add_argument('--hardware');parser.add_argument('--output',default='llf-test-result.json')
+    parser.add_argument('--prompt',choices=['writing','code'],default='writing',help='Baseline prompt; writing is the default.')
     args=parser.parse_args()
     try:
         models=api('/api/tags').get('models',[])
@@ -42,7 +46,7 @@ def main():
         if not hardware:hardware=input('Hardware (for example Mac M2 16 GB): ').strip()
         version=api('/api/version').get('version','')
         options={'num_ctx':4096,'num_predict':128,'temperature':0,'seed':42}
-        body={'model':model['name'],'prompt':PROMPT,'stream':False,'options':options,'keep_alive':'5m'}
+        body={'model':model['name'],'prompt':CODE_PROMPT if args.prompt=='code' else PROMPT,'stream':False,'options':options,'keep_alive':'5m'}
         print('Warming up the model, then running five short tests. No results are uploaded.')
         api('/api/generate',body)
         samples=[]
@@ -53,7 +57,7 @@ def main():
             print(f'  Run {i+1}/5: {tokens/seconds:.1f} tokens/second')
         loaded=next((m for m in api('/api/ps').get('models',[]) if m.get('name')==model['name'] or m.get('model')==model['name']),{})
         vram=loaded.get('size_vram',0);size=loaded.get('size',0)
-        report={'protocol':'llf-ollama-v1','testedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'hardware':hardware,'model':model['name'],'modelDigest':model.get('digest',''),'quant':model.get('details',{}).get('quantization_level',''),'runtimeVersion':version,'contextTokens':loaded.get('context_length') or 4096,'numPredict':128,'samples':samples,'loadedVramGB':round(vram/1e9,3) if vram else None,'offload':'all_on_gpu' if size and vram>=size*.99 else 'mixed_or_cpu'}
+        report={'protocol':'llf-ollama-v1','promptId':'baseline-code-v1' if args.prompt=='code' else 'baseline-writing-v1','testedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'hardware':hardware,'model':model['name'],'modelDigest':model.get('digest',''),'quant':model.get('details',{}).get('quantization_level',''),'runtimeVersion':version,'contextTokens':loaded.get('context_length') or 4096,'numPredict':128,'samples':samples,'loadedVramGB':round(vram/1e9,3) if vram else None,'offload':'all_on_gpu' if size and vram>=size*.99 else 'mixed_or_cpu'}
         Path(args.output).write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
         print(f'Saved {args.output}. Import this file on the Share a test page, check the details, and submit if you want to contribute.')
         return 0

@@ -1,5 +1,10 @@
 export const PROTOCOL = 'llf-ollama-v1';
 export const OUTCOMES = ['runs', 'slow', 'unable'];
+export const BASELINE_PROMPTS = [
+  {id:'baseline-writing-v1',title:'Writing baseline',prompt:'Write a practical guide for someone organizing a small home library. Explain how to sort books, label shelves, track borrowed books, and maintain the system. Give concrete examples and continue for at least 250 words. Do not use tools.'},
+  {id:'baseline-code-v1',title:'Coding baseline',prompt:'Write a Python function that accepts a list of dictionaries containing title, author, and year, then groups the books by author and sorts each group by year. Include input validation and a short example showing the result. Do not use external packages or tools.'},
+];
+export const scenarioLabel = id => BASELINE_PROMPTS.find(p=>p.id===id)?.title || (id==='custom'?'Own test':'Not specified');
 const clean = (value, max=200) => typeof value==='string' ? value.replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,max) : '';
 const number = (v,max) => v!=='' && v!=null && Number.isFinite(Number(v)) && Number(v)>0 && Number(v)<=max ? Number(v) : null;
 const median = values => { const s=[...values].sort((a,b)=>a-b),n=s.length; return n ? (s[Math.floor(n/2)]+s[Math.floor((n-1)/2)])/2 : null; };
@@ -18,10 +23,10 @@ export function normalizeSubmission(input) {
     hardwareId:/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/.test(input.hardwareId||'') ? input.hardwareId : null,
     modelId:/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/.test(input.modelId||'') ? input.modelId : null,
     outcome:input.outcome,generationTps:run?.generationTps??number(input.generationTps,10000),memoryGB:number(input.memoryGB,4096),contextTokens:run?.contextTokens??number(input.contextTokens,4000000),
-    quant:clean(input.quant,40),runtime:clean(input.runtime,80),runtimeVersion:clean(input.runtimeVersion,80),note:clean(input.note,600),nickname:clean(input.nickname,40),benchmark:run,source:run?'benchmark_import':'quick_report',calibrationEligible:false,
+    quant:clean(input.quant,40),runtime:clean(input.runtime,80),runtimeVersion:clean(input.runtimeVersion,80),testScenario:run?.promptId||([...BASELINE_PROMPTS.map(p=>p.id),'custom'].includes(input.testScenario)?input.testScenario:''),note:clean(input.note,600),nickname:clean(input.nickname,40),benchmark:run,source:run?'benchmark_import':'quick_report',calibrationEligible:false,
   };
   if(run){result.quant=run.quant||result.quant;result.runtime='Ollama';result.runtimeVersion=run.runtimeVersion;}
-  result.calibrationEligible=!!(run && result.hardwareId && result.modelId && run.modelDigest && run.runtimeVersion && run.samples.length>=3 && run.quant && run.numPredict && run.offload==='all_on_gpu' && run.samples.every(s=>s.outputTokens>=64 && s.promptTokens) && result.outcome!=='unable');
+  result.calibrationEligible=!!(run && BASELINE_PROMPTS.some(p=>p.id===run.promptId) && result.hardwareId && result.modelId && run.modelDigest && run.runtimeVersion && run.samples.length>=3 && run.quant && run.numPredict && run.offload==='all_on_gpu' && run.samples.every(s=>s.outputTokens>=64 && s.promptTokens) && result.outcome!=='unable');
   return result;
 }
 
@@ -31,7 +36,8 @@ function normalizeRun(input) {
   if(!samples.length) throw new Error('The benchmark file has no completed measurements.');
   const contextTokens=number(input.contextTokens,4000000);
   if(!contextTokens) throw new Error('The benchmark file is missing its context setting.');
-  return {protocol:PROTOCOL,testedAt:clean(input.testedAt,40),modelName:clean(input.modelName||input.model),runtimeVersion:clean(input.runtimeVersion,80),modelDigest:/^[a-z0-9:]{16,100}$/i.test(input.modelDigest||'')?input.modelDigest:'',quant:clean(input.quant,40),contextTokens,numPredict:number(input.numPredict,1000000),samples,generationTps:median(samples.map(s=>s.outputTokens/s.generationSeconds)),loadedVramGB:number(input.loadedVramGB,4096),offload:clean(input.offload,80)};
+  const promptId=input.promptId==null?'baseline-writing-v1':BASELINE_PROMPTS.some(p=>p.id===input.promptId)?input.promptId:'unidentified';
+  return {protocol:PROTOCOL,promptId,testedAt:clean(input.testedAt,40),modelName:clean(input.modelName||input.model),runtimeVersion:clean(input.runtimeVersion,80),modelDigest:/^[a-z0-9:]{16,100}$/i.test(input.modelDigest||'')?input.modelDigest:'',quant:clean(input.quant,40),contextTokens,numPredict:number(input.numPredict,1000000),samples,generationTps:median(samples.map(s=>s.outputTokens/s.generationSeconds)),loadedVramGB:number(input.loadedVramGB,4096),offload:clean(input.offload,80)};
 }
 
 export function parseTestOutput(text) {
@@ -54,8 +60,8 @@ export function calibrationCandidates(reports) {
   const groups=new Map();
   for(const r of reports){
     if(!r.useForCalibration || !r.calibrationEligible || !r.benchmark || r.outcome==='unable')continue;
-    const b=r.benchmark,promptTokens=median(b.samples.map(s=>s.promptTokens).filter(Boolean)),key=JSON.stringify([r.hardwareId,r.modelId,b.modelDigest,b.quant,b.runtimeVersion,b.contextTokens,b.numPredict,b.offload,promptTokens]);
-    const g=groups.get(key)||{hardwareId:r.hardwareId,modelId:r.modelId,modelDigest:b.modelDigest,quant:b.quant,runtime:'Ollama',runtimeVersion:b.runtimeVersion,contextTokens:b.contextTokens,promptTokens,offload:b.offload,protocol:b.protocol,evidence:[],sources:new Map()};
+    const b=r.benchmark,promptId=b.promptId||'baseline-writing-v1',promptTokens=median(b.samples.map(s=>s.promptTokens).filter(Boolean)),key=JSON.stringify([r.hardwareId,r.modelId,b.modelDigest,b.quant,b.runtimeVersion,b.contextTokens,b.numPredict,b.offload,promptTokens,promptId]);
+    const g=groups.get(key)||{hardwareId:r.hardwareId,modelId:r.modelId,modelDigest:b.modelDigest,quant:b.quant,runtime:'Ollama',runtimeVersion:b.runtimeVersion,contextTokens:b.contextTokens,numPredict:b.numPredict,promptTokens,promptId,offload:b.offload,protocol:b.protocol,evidence:[],sources:new Map()};
     g.evidence.push({id:r.id,generationTps:b.generationTps,verification:r.verification,samples:b.samples.length});
     const source=r._sourceGroup||r.id;g.sources.set(source,[...(g.sources.get(source)||[]),b.generationTps]);groups.set(key,g);
   }

@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
 const file=new URL('../overrides/tests/submissions.js',import.meta.url);
-const {normalizeSubmission,parseTestOutput,calibrationCandidates}=await import('data:text/javascript;base64,'+Buffer.from(fs.readFileSync(file,'utf8')).toString('base64'));
+const {normalizeSubmission,parseTestOutput,calibrationCandidates,BASELINE_PROMPTS}=await import('data:text/javascript;base64,'+Buffer.from(fs.readFileSync(file,'utf8')).toString('base64'));
 const basic={hardware:'NVIDIA GeForce RTX 3060 — 12 GB',model:'Qwen2.5-Coder 7B',hardwareId:'rtx-3060',modelId:'model-10',outcome:'runs'};
 const quick=normalizeSubmission({...basic,rawLog:'private prompt and file path',generationTps:24.5,calibrationEligible:true});
 assert.equal(quick.calibrationEligible,false);
@@ -33,3 +34,15 @@ groups=calibrationCandidates([approved,{...approved,id:'two',benchmark:{...repea
 assert.equal(groups.length,2,'Different runtime versions must not be merged');
 assert.ok(!JSON.stringify(groups).includes('source-a'),'Private source groups must not be exported');
 console.log('Community evidence checks passed: quick reports, generation-only parsing, privacy, repeated-run eligibility and independent-source grouping.');
+
+const guided=normalizeSubmission({...basic,testScenario:'baseline-code-v1',response:'DO NOT STORE',reply:'DO NOT STORE'});
+assert.equal(guided.testScenario,'baseline-code-v1');assert.equal(guided.calibrationEligible,false);assert.ok(!JSON.stringify(guided).includes('DO NOT STORE'));
+const writing={...approved,id:'writing',benchmark:{...approved.benchmark,promptId:'baseline-writing-v1'}};
+const coding={...approved,id:'coding',benchmark:{...approved.benchmark,promptId:'baseline-code-v1'}};
+assert.equal(calibrationCandidates([writing,coding]).length,2,'Different baseline prompts must not be combined');
+console.log('Baseline checks passed: guided observations remain non-calibrating, responses are omitted, and writing/coding evidence stays separate.');
+
+assert.equal(normalizeSubmission({...basic,benchmark:{...run,promptId:'unidentified'}}).calibrationEligible,false);
+const helperPrompts=JSON.parse(execFileSync('python3',['-c',"import ast,json,sys; t=ast.parse(open(sys.argv[1]).read()); print(json.dumps({n.targets[0].id:ast.literal_eval(n.value) for n in t.body if isinstance(n,ast.Assign) and isinstance(n.targets[0],ast.Name) and n.targets[0].id in ['PROMPT','CODE_PROMPT']}))",new URL('../overrides/tests/llf-test.py',import.meta.url).pathname],{encoding:'utf8'}));
+assert.equal(helperPrompts.PROMPT,BASELINE_PROMPTS[0].prompt);assert.equal(helperPrompts.CODE_PROMPT,BASELINE_PROMPTS[1].prompt);
+console.log('Helper prompt text exactly matches both published baseline prompts.');

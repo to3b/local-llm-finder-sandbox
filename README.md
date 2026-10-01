@@ -49,8 +49,10 @@ The offline content snapshot is retained for reproducibility. The workflow uses 
 
 ## Community tests — awaiting approval
 
-The [Share a test page](https://to3b.github.io/local-llm-finder-sandbox/tests/) needs only hardware, model and outcome. No account/email is required. Finder links prefill known hardware and model; speed, settings and notes stay optional. Pasted/imported output is parsed in the browser, with raw logs/prompts/replies omitted from the saved report. Failed writes preserve input for retry.
+The [Share a test page](https://to3b.github.io/local-llm-finder-sandbox/tests/) needs only hardware, model and outcome. No account/email is required. Model/hardware articles offer a contextual Share a test link and prefill the relevant item. Tests are absent from global navigation and Finder results; speed, settings and notes stay optional. Pasted/imported output is parsed in the browser, with raw logs/prompts/replies omitted from the saved report. Failed writes preserve input for retry.
 
 Reports are stored by a separate sandbox service at `https://localllm-tests-sandbox.to3b.chatgpt.site`. Its Owner review link uses Sign in with ChatGPT for the site owner. Reports appear in Reviewed results only after approval. There are no invented benchmark results. The optional Python/Ollama helper runs five repeatable local measurements, saves a file, and never uploads automatically.
 
 Only reviewed, explicitly selected and complete GPU measurements can be exported as calibration candidates. Generation speed does not measure answer quality, sparse evidence stays labelled, and candidates never alter rankings automatically. The production exporter intentionally omits this addition. See [PROMOTION.md](PROMOTION.md) before any production release.
+
+The optional example-prompt guide provides fixed writing and coding baselines, warm-up/repeated-run instructions and known settings. Own tasks remain welcome with an optional note; no response field exists. One final shared design stylesheet applies the same flat theme, body typography and zero-radius policy to every sandbox page. CI audits all HTML and checks every page at desktop and mobile widths.

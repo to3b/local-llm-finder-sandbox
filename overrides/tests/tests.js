@@ -1,8 +1,8 @@
 import { API_BASE } from './config.js';
-import { normalizeSubmission, parseTestOutput } from './submissions.js';
+import { normalizeSubmission, parseTestOutput, BASELINE_PROMPTS } from './submissions.js';
 
 const form=document.querySelector('#test-form'),error=document.querySelector('#form-error'),submit=document.querySelector('#submit-test');
-const fields=['hardware','model','generationTps','runtime','quant','contextTokens','memoryGB','runtimeVersion','nickname','note'];
+const fields=['hardware','model','generationTps','runtime','quant','contextTokens','memoryGB','runtimeVersion','nickname','testScenario','note'];
 const key='llf-test-draft-v1';
 let catalogue={models:[],hardware:[]},benchmark=null,id=uuid();
 function uuid(){if(crypto.randomUUID)return crypto.randomUUID();return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));}
@@ -38,7 +38,7 @@ form.addEventListener('submit',async event=>{
  }catch(e){showError(e.name==='AbortError'?'Saving took too long. Your details are still here; please try again.':e.message==='Failed to fetch'?'We could not reach test storage. Your details are still here; please try again.':e.message);}
  finally{submit.disabled=false;submit.textContent='Submit for review';}
 });
-document.querySelector('#another').addEventListener('click',()=>{form.reset();benchmark=null;syncOutcome();clearError();form.hidden=false;document.querySelector('#success').hidden=true;form.elements.hardware.focus();});
+document.querySelector('#another').addEventListener('click',()=>{form.reset();benchmark=null;syncOutcome();clearError();form.hidden=false;document.querySelector('#success').hidden=true;document.querySelector('#extra-details').open=false;document.querySelector('.import-panel').open=false;form.elements.hardware.focus();});
 
 function readOutput(text){const status=document.querySelector('#import-status');try{const parsed=parseTestOutput(text);if(!parsed.recognized){status.textContent='We couldn’t find a generation-speed result. You can enter the speed yourself or send a quick report below.';return;}const model=selected(catalogue.models,parsed.model||'');if(model)parsed.model=model.name;apply(parsed);remember();status.textContent=parsed.benchmark?`Imported ${parsed.benchmark.samples.length} repeated runs. Check the hardware and model below, then submit.`:'Found a generation-speed result. Check the details below, then choose how it ran.';document.querySelector('#test-output').value='';}catch(e){status.textContent=e.message;}}
 document.querySelector('#read-output').addEventListener('click',()=>readOutput(document.querySelector('#test-output').value));
@@ -50,9 +50,17 @@ try{
  const p=new URLSearchParams(location.search),h=catalogue.hardware.find(x=>x.id===p.get('hardware')),m=catalogue.models.find(x=>x.id===p.get('model'));
  if(h)form.elements.hardware.value=h.name;else if(p.get('device')==='mac')form.elements.hardware.value=`Mac · ${p.get('memory')||''} GB unified memory`;else if(p.get('device')==='unsure'&&p.get('memory'))form.elements.hardware.value=`PC · ${p.get('memory')} GB RAM`;
  if(m)form.elements.model.value=m.name;if(p.get('quant'))form.elements.quant.value=p.get('quant').slice(0,40);
+ const from=p.get('from');if(/^(models|hardware)\/[a-z0-9]+(?:[._-][a-z0-9]+)*$/.test(from||'')){const link=document.querySelector('#article-return');link.href='../knowledge-preview/'+from+'/';link.hidden=false;}
  // Finder context is a planning input, not a measured runtime setting. Do not prefill it as evidence.
  if(m||h)remember();
 }catch{/* Free-text reports remain available if catalogue suggestions cannot load. */}
+
+for(const baseline of BASELINE_PROMPTS){
+ const section=document.createElement('section');section.className='baseline-prompt';const title=document.createElement('h3');title.textContent=baseline.title;const prompt=document.createElement('blockquote');prompt.textContent=baseline.prompt;
+ const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent='Copy '+baseline.title.toLowerCase();button.addEventListener('click',async()=>{const status=document.querySelector('#baseline-status');try{await navigator.clipboard.writeText(baseline.prompt);form.elements.testScenario.value=baseline.id;remember();status.textContent=baseline.title+' copied. The test type is selected below. Paste it into a fresh chat in your app.';}catch{form.elements.testScenario.value=baseline.id;remember();status.textContent='Copy the prompt text above into your app. The test type is selected below.';}});section.append(title,prompt,button);document.querySelector('#baseline-prompts').append(section);
+}
+document.querySelectorAll('a[href="#test-guide"]').forEach(link=>link.addEventListener('click',()=>{document.querySelector('#test-guide').open=true;}));
+if(location.hash==='#test-guide')document.querySelector('#test-guide').open=true;
 
 const context=document.modelContext;
 if(context?.registerTool){
