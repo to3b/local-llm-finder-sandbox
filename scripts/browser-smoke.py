@@ -185,7 +185,18 @@ try:
             wait.until(lambda d, selector=panel: visible(selector))
             assert len(driver.find_elements(By.CSS_SELECTOR, '.journey-option[aria-selected="true"]')) == 1
         # Search empty-state and recovery.
-        driver.find_element(By.CSS_SELECTOR, '.catalog > summary').click()
+        # Journey rendering can replace the catalogue after its panel becomes visible.
+        from selenium.common.exceptions import StaleElementReferenceException, NoSuchElementException
+        def open_catalog(d):
+            try:
+                catalog = d.find_element(By.CSS_SELECTOR, '.catalog')
+                if catalog.get_attribute('open') is not None:
+                    return True
+                catalog.find_element(By.CSS_SELECTOR, 'summary').click()
+                return False
+            except (StaleElementReferenceException, NoSuchElementException):
+                return False
+        wait.until(open_catalog)
         search = driver.find_element(By.ID, 'catalog-search')
         search.send_keys('zzzz-no-model')
         wait.until(lambda d: 'No matches for' in d.find_element(By.ID, 'catalog-count').text)
