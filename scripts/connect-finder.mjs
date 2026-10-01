@@ -8,10 +8,11 @@ for(const rel of ['index.html','dist/index.html']){
  if(!s.includes('references.js'))s=s.replace('</head>',`<meta name="knowledge-base" content="${base}"><link rel="stylesheet" href="./references.css?v=1"></head>`).replace('</body>','<script type="module" src="./references.js?v=1"></script></body>');
  s=s.replace(/<section class="content-section knowledge-preview"[\s\S]*?<\/section>/,'<aside class="knowledge-availability">Read the requirements behind the results in <a href="https://knowledge.localllmfinder.com/">Knowledge</a>.</aside>').replace('Model and hardware references are in preparation.','Read the requirements behind the results in');
  s=s.replaceAll('>Knowledge preview →</a>','>Knowledge →</a>').replaceAll('>Knowledge preview</a>','>Knowledge</a>');
- s=s.replace(/\.\/app\.js\?v=[^"']+/g,`./app.js?v=references-${version}`);
+ if(!base.startsWith('/')) s=s.replace(/\.\/app\.js\?v=[^"']+/g,`./app.js?v=references-${version}`);
  fs.writeFileSync(file,s);
 }
 for(const rel of ['dist/app.js','dist/journeys.js','dist/recommend.js']){
+ if(base.startsWith('/')) continue; // The sandbox preparation owns its coordinated preload URLs.
  const file=path.join(root,rel);let s=fs.readFileSync(file,'utf8');
  s=s.replace(/\.\/recommend\.js\?v=[^"']+/g,`./recommend.js?v=references-${version}`).replace(/\.\/journeys\.js\?v=[^"']+/g,`./journeys.js?v=references-${version}`);
  fs.writeFileSync(file,s);
