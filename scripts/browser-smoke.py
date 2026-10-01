@@ -266,13 +266,23 @@ try:
         driver.save_screenshot(f'browser-evidence/knowledge-{width}.png')
 
     # New entity mappings must appear in real comparison results, including an MoE model.
-    for name, entity_id, slug in [('Qwen3 8B', 'model-7', 'qwen3-8b'), ('gpt-oss-20b', 'extra-gpt-oss-20b', 'gpt-oss-20b'), ('GLM-4.5-Air', 'extra-glm-4.5-air', 'glm-4-5-air')]:
+    for name, entity_id, slug in [('Qwen3 8B', 'model-7', 'qwen3-8b'), ('gpt-oss-20b', 'extra-gpt-oss-20b', 'gpt-oss-20b')]:
         driver.get(url + '#d=mac&m=32&t=coding&j=improve')
         wait.until(lambda d: visible('#improve-results'))
         current = driver.find_element(By.ID, 'current-model')
         current.clear(); current.send_keys(name)
         reference = wait.until(lambda d: d.find_element(By.CSS_SELECTOR, f'#improve-content [data-reference-id="{entity_id}"] a'))
         assert f'/knowledge-preview/models/{slug}/' in reference.get_attribute('href')
+
+    # A large draft model with a dotted ID is discoverable in the full catalogue,
+    # even when it is not a recommendation for the selected hardware.
+    driver.get(url + '#d=mac&m=128&t=coding&j=find')
+    wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.catalog'))
+    wait.until(open_catalog)
+    driver.find_element(By.ID, 'catalog-search').send_keys('GLM-4.5-Air')
+    draft = wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '.catalog-list [data-reference-id="extra-glm-4.5-air"] a'))
+    assert '/knowledge-preview/models/glm-4-5-air/' in draft.get_attribute('href')
+    assert '(draft)' in draft.text
 
     severe = []
     for entry in driver.get_log('browser'):
