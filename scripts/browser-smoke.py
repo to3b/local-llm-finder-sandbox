@@ -174,6 +174,7 @@ try:
         driver.get(url + '#d=gpu&g=rtx-3060&t=coding&p=3&c=8&r=32&s=1')
         wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '#results-content .model-row'))
         assert driver.execute_script('return document.documentElement.scrollWidth <= innerWidth'), f'Finder overflow at {width}'
+        assert all(link.is_displayed() for link in driver.find_elements(By.CSS_SELECTOR, '.site-nav a')), f'Hidden Finder navigation at {width}'
         assert driver.execute_script("return getComputedStyle(document.body).backgroundImage") == 'none'
         assert driver.execute_script("return getComputedStyle(document.querySelector('.metric.speed')).display") != 'none'
         driver.save_screenshot(f'browser-evidence/finder-{width}.png')
