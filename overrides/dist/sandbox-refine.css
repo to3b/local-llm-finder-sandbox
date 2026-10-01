@@ -297,3 +297,92 @@ body {
     margin-bottom: 3px;
   }
 }
+
+/* Product cleanup: hierarchy comes from alignment and content, not nested shells. */
+body { background-image: none; overflow-x: visible; }
+.hero { padding: 26px 0 18px; border: 0; }
+.hero h1 { font-size: clamp(30px, 3.2vw, 40px); line-height: 1.12; letter-spacing: -.035em; }
+.hero > p { margin-top: 12px !important; }
+.journey-nav { padding-top: 12px; }
+.journey-option { border-radius: 6px; }
+.stage-section, .stage-section.control-section { margin: 0; padding: 18px 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; }
+.stage-index { border: 0; background: transparent; border-radius: 0; width: 14px; justify-content: start; color: var(--muted) !important; }
+.stage-section .section-heading { margin-bottom: 12px; }
+.field-help, .metric > span, .model-title small, .detail-label, .journey-caveat, .decision-card dt { font-size: .875rem; }
+.priority-step { font-size: .8rem; }
+.tier-start { display: none; }
+.results-tools { display: flex; flex-direction: column; align-items: end; gap: 4px; }
+.result-actions { min-height: 44px; border: 0; flex-wrap: wrap; justify-content: end; }
+.results-heading { align-items: start; }
+.speed-availability { color: var(--muted); font-size: .875rem; margin: 12px 0; }
+.model-row.speed-unavailable > summary { grid-template-columns: minmax(0,1fr) 112px 17px; }
+.model-title strong { overflow-wrap: anywhere; }
+.match-list > .model-row.top-choice { border-radius: 0; border: 0; border-left: 3px solid var(--selected-mark); background: var(--surface); box-shadow: none; }
+.top-choice-badge { border: 0; padding: 0; border-radius: 0; background: none; color: var(--text); font-size: .75rem; }
+.why-top-match { padding: 0; border: 0; border-radius: 0; background: none; font-size: .875rem; }
+.why-top-match strong { font-size: .875rem; }
+.estimate-context { padding: 0; background: none; border: 0; font-size: .875rem; }
+.detail-grid { grid-template-columns: 1fr; padding: 8px 0; border: 0; }
+.catalog { background: transparent; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); border-radius: 0; }
+.catalog > summary { padding-inline: 0; min-height: 44px; }
+.catalog-body { padding-inline: 0; }
+.catalog-body input { min-height: 44px; }
+.decision-summary, .decision-summary.decision-positive, .decision-summary.decision-warning { border: 0; border-radius: 0; background: transparent; padding: 0 0 16px; }
+.decision-summary h3 { font-size: 1.2rem; }
+.delta-strip { gap: 20px; }
+.delta-strip span { background: none; border: 0; padding: 0; font-size: .875rem; }
+.decision-card { padding: 16px; border-radius: 6px; }
+.decision-label { font-size: .875rem; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.upgrade-list { gap: 0; }
+.upgrade-milestone { border: 0; border-top: 1px solid var(--line); background: transparent; border-radius: 0; padding: 18px 0; }
+.content-section { padding: 24px 0 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; margin-top: 32px; }
+.knowledge-availability { color: var(--muted); font-size: .875rem; line-height: 1.6; margin: 24px 0 0; }
+.knowledge-availability a, .try-setup { color: var(--accent); text-underline-offset: 3px; }
+.example-table-wrap { overflow-x: auto; margin: 16px 0 8px; }
+.example-table { width: 100%; border-collapse: collapse; text-align: left; font-size: .875rem; font-variant-numeric: tabular-nums; }
+.example-table caption { text-align: left; color: var(--muted); padding-bottom: 12px; }
+.example-table td, .example-table th { border-bottom: 1px solid var(--line); padding: 12px 10px 12px 0; vertical-align: top; }
+.example-table thead th { color: var(--muted); font-weight: 500; }
+.example-table th[scope=row] { max-width: 280px; overflow-wrap: anywhere; font-weight: 600; }
+.try-setup { display: inline-flex; align-items: center; min-height: 44px; }
+.doc-hero { padding: 30px 0 24px; }
+.doc-hero h1 { font-size: clamp(28px, 3vw, 36px); line-height: 1.15; letter-spacing: -.035em; }
+.doc-hero > .eyebrow { display: none; }
+.doc-chip { border: 0; border-radius: 0; background: none; padding: 0; color: var(--muted); font-size: .875rem; }
+.doc-meta, .doc-summary-card p, .preview-card p { font-size: .875rem; }
+.doc-summary-grid { gap: 20px; }
+.doc-summary-card { padding: 0; border: 0; background: transparent; }
+.doc-summary-card small { text-transform: none; letter-spacing: 0; font-size: .875rem; }
+.doc-callout { padding: 16px 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; }
+.preview-grid { display: block; }
+.preview-card { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 16px 0; background: none; }
+.preview-card .upcoming-label { display: block; border: 0; border-radius: 0; padding: 0; background: none; color: var(--muted); font-size: .875rem; }
+.preview-card small { text-transform: none; letter-spacing: 0; font-size: .875rem; }
+.site-nav a[aria-current=page] { text-decoration: underline; text-underline-offset: 6px; text-decoration-color: var(--accent); }
+.site-nav a { display: inline-flex; align-items: center; min-height: 44px; }
+/* Preserve all navigation destinations at narrow widths. */
+@media (max-width: 700px) {
+ .site-nav a:not([aria-current=page]):not(.knowledge-nav) { display: inline-flex; }
+ .site-topbar { flex-wrap: wrap; gap: 0; padding-block: 10px; }
+ .site-nav { flex-wrap: wrap; gap: 16px; }
+ .model-row > summary, .model-row.speed-unavailable > summary { grid-template-columns: minmax(0,1fr) minmax(90px,110px) 14px; gap: 10px; }
+ .model-row .metric.speed { display: block; grid-column: 2; grid-row: 2; }
+ .model-row .chevron { grid-column: 3; grid-row: 1; }
+ .why-top-match { grid-column: 1 / -1; }
+ .results-heading { flex-wrap: wrap; gap: 8px; }
+ .results-tools { align-items: start; }
+ .results-note { max-width: none; text-align: left; }
+ .result-actions { justify-content: start; }
+ .journey-options { grid-template-columns: repeat(3,minmax(0,1fr)); }
+ .journey-option { display: block; padding: 10px 8px; }
+ .journey-option small { font-size: .75rem; margin-top: 4px; }
+ .stage-section, .content-section { padding-inline: 0; }
+ .doc-hero h1 { font-size: 28px; }
+ .example-table { min-width: 600px; }
+ .doc-summary-grid { grid-template-columns: 1fr; }
+}
+.journey-option[aria-pressed="true"]:hover,
+.priority-step[aria-pressed="true"]:hover,
+.device-choices label:hover > input:checked + span,
+.task-choices label:hover > input:checked + span,
+.memory-choices label:hover > input:checked + span { background: var(--selected-bg); }

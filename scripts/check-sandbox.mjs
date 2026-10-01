@@ -26,13 +26,13 @@ for (const [name, html] of [['root', rootHtml], ['dist', distHtml]]) {
   assert.ok(html.includes('copy-tune.js?v=sandbox-'), `${name} must cache-bust the build-time modified enhancement module`);
 }
 
-assert.ok(app.includes("new URL('/local-llm-finder-sandbox/', window.location.origin)"), 'sandbox share links must stay inside the sandbox');
+assert.ok(app.includes('new URL("/local-llm-finder-sandbox/", window.location.origin)'), 'sandbox share links must stay inside the sandbox');
 assert.ok(app.includes('Top match for your settings'), 'top recommendation copy must be calibrated');
 assert.ok(app.includes('Why this match'), 'top recommendations must explain the ranking in the collapsed card');
 assert.ok(app.includes('ranks highest for ${preferenceLabel} priority'), 'top rationale must connect to the selected speed/quality preference');
 assert.ok(app.includes('Context used for this estimate'), 'expanded results must expose estimate context');
 assert.ok(app.includes('Model context limit'), 'expanded results must distinguish model context limit');
-assert.ok(app.includes('Select your GPU to estimate speed'), 'unknown speed copy must state the next action');
+assert.ok(app.includes('speedAvailability(hardware)'), 'all result views must use hardware-aware speed copy');
 assert.ok(app.includes('fit · ${parameterText'), 'collapsed rows must expose a task-fit reason');
 
 assert.match(recommend, /import\('\.\/journeys\.js\?v=sandbox-[^']+'\)/, 'recommend.js must be the single cache-busted journey execution path');
@@ -41,7 +41,7 @@ assert.ok(!recommend.includes("import('./journeys.js?v=20260929e')"), 'recommend
 assert.ok(journeys.includes("if (!document.querySelector('.journey-nav'))"), 'journey code must not duplicate the static selector');
 assert.ok(journeys.includes("if (!document.querySelector('#improve-results') && !document.querySelector('#upgrade-results'))"), 'journey code must guard against duplicate comparison result sections');
 assert.ok(journeys.includes("b.setAttribute('aria-selected'"), 'journey tabs must synchronize aria-selected');
-assert.ok(journeys.includes("new URL('/local-llm-finder-sandbox/', location.origin)"), 'journey hashes must stay inside the sandbox');
+assert.ok(journeys.includes('new URL("/local-llm-finder-sandbox/", location.origin)'), 'journey hashes must stay inside the sandbox');
 assert.ok(journeys.includes('Capacity comparison'), 'upgrade view must identify itself as a capacity comparison');
 assert.ok(journeys.includes('Model context limit'), 'comparison cards must distinguish the model context limit');
 
@@ -58,3 +58,11 @@ assert.ok(css.includes('font-variant-numeric: tabular-nums'), 'comparison number
 assert.ok(css.includes('min-height: 44px'), 'primary controls should meet the touch-target target');
 
 console.log('Sandbox first-paint, module-loading, interaction and style-guide smoke checks passed.');
+const { speedAvailability } = await import(new URL('../dist/ui-state.js', `file://${root}/scripts/`));
+assert.equal(speedAvailability({mode:'mac'}), 'Mac speed not estimated');
+assert.equal(speedAvailability({mode:'unsure'}), 'CPU speed not estimated');
+assert.equal(speedAvailability({mode:'gpu'}), 'Choose a graphics card for speed estimates');
+assert.equal(speedAvailability({mode:'gpu',customMemory:true}), 'Speed disabled by memory override');
+assert.ok(!app.includes('tok/s · rough'), 'speed qualifications must not repeat per metric');
+assert.ok(rootHtml.includes('class="example-table"'), 'worked example must provide aligned measurements');
+assert.ok(!rootHtml.includes('class="knowledge-grid"'), 'unpublished reference topics must not dominate the Finder');

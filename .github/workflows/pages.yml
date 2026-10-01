@@ -30,6 +30,13 @@ jobs:
           ref: 9eaad0eb611760802093bc52983adb8927785fad
           path: site
 
+      - name: Checkout Knowledge preview snapshot
+        uses: actions/checkout@v4
+        with:
+          repository: to3b/local-llm-finder-knowledge
+          ref: 1a10ffd513d1047b0db77cc7620e0a8fddcb2703
+          path: knowledge
+
       - name: Apply sandbox overrides
         run: |
           if [ -d sandbox/overrides ]; then
@@ -46,7 +53,13 @@ jobs:
         run: npm test
 
       - name: Apply build-time sandbox refinement
-        run: node sandbox/scripts/prepare-sandbox.mjs site
+        run: |
+          rsync -a --exclude '.git' --exclude 'CNAME' knowledge/ site/knowledge-preview/
+          node sandbox/scripts/prepare-sandbox.mjs site
+
+      - name: Recheck recommendation and data contracts after cleanup
+        working-directory: site
+        run: npm test
 
       - name: Prepare isolated staging build
         run: |
@@ -76,6 +89,13 @@ jobs:
             sleep 0.2
           done
           python3 sandbox/scripts/browser-smoke.py http://127.0.0.1:4173/local-llm-finder-sandbox/
+
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-evidence
+          path: browser-evidence/
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

@@ -142,6 +142,61 @@ try:
     selected_tabs = driver.find_elements(By.CSS_SELECTOR, '.journey-option[aria-selected="true"]')
     assert len(selected_tabs) == 1
 
+    # Shared speed floors must survive startup enhancement (previously 10/15 reset to 1).
+    driver.get(url + '#d=gpu&g=rtx-3060&t=coding&p=3&c=8&r=32&s=15')
+    wait.until(lambda d: d.find_elements(By.ID, 'speed-choice'))
+    assert driver.find_element(By.ID, 'speed-input').get_attribute('value') == '15'
+    assert driver.find_element(By.ID, 'speed-choice').get_attribute('value') == '15'
+
+    # Hardware-aware availability copy is shared by shortlist and comparison views.
+    js_click(driver.find_element(By.CSS_SELECTOR, 'input[name="device"][value="mac"]'))
+    wait.until(lambda d: 'Mac speed not estimated' in d.find_element(By.ID, 'results-content').text)
+    assert 'Needs exact GPU' not in driver.find_element(By.ID, 'results-content').text
+    assert not driver.find_elements(By.CSS_SELECTOR, '#results-content .metric.speed')
+    js_click(driver.find_element(By.CSS_SELECTOR, '[data-journey="improve"]'))
+    current = driver.find_element(By.ID, 'current-model')
+    current.clear(); current.send_keys('Qwen3 8B')
+    wait.until(lambda d: 'Mac speed not estimated' in d.find_element(By.ID, 'improve-content').text)
+
+    # Accessible tabs support keyboard navigation and a single tab stop.
+    tab = driver.find_element(By.CSS_SELECTOR, '[data-journey="improve"]')
+    from selenium.webdriver.common.keys import Keys
+    tab.send_keys(Keys.ARROW_RIGHT)
+    wait.until(lambda d: visible('#upgrade-results'))
+    assert len(driver.find_elements(By.CSS_SELECTOR, '.journey-option[tabindex="0"]')) == 1
+
+    import os
+    os.makedirs('browser-evidence', exist_ok=True)
+    # Actual viewport widths, including mobile layouts and long model names.
+    for width in [360, 390, 768, 1280]:
+        driver.set_window_size(width, 1000)
+        driver.get(url + '#d=gpu&g=rtx-3060&t=coding&p=3&c=8&r=32&s=1')
+        wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '#results-content .model-row'))
+        assert driver.execute_script('return document.documentElement.scrollWidth <= innerWidth'), f'Finder overflow at {width}'
+        assert driver.execute_script("return getComputedStyle(document.body).backgroundImage") == 'none'
+        assert driver.execute_script("return getComputedStyle(document.querySelector('.metric.speed')).display") != 'none'
+        driver.save_screenshot(f'browser-evidence/finder-{width}.png')
+        # All three journeys remain usable and mutually exclusive at every width.
+        for mode in ['improve', 'upgrade', 'find']:
+            driver.find_element(By.CSS_SELECTOR, f'[data-journey="{mode}"]').click()
+            panel = '#results' if mode == 'find' else f'#{mode}-results'
+            wait.until(lambda d, selector=panel: visible(selector))
+            assert len(driver.find_elements(By.CSS_SELECTOR, '.journey-option[aria-selected="true"]')) == 1
+        # Search empty-state and recovery.
+        driver.find_element(By.CSS_SELECTOR, '.catalog > summary').click()
+        search = driver.find_element(By.ID, 'catalog-search')
+        search.send_keys('zzzz-no-model')
+        wait.until(lambda d: 'No matches for' in d.find_element(By.ID, 'catalog-count').text)
+        search.clear(); search.send_keys('Qwen')
+        wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, '.catalog-list .model-row')) > 0)
+        for page in ['dist/methodology.html', 'dist/privacy.html', 'dist/terms.html', 'knowledge-preview/']:
+            driver.get(url + page)
+            wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.site-topbar'))
+            assert driver.execute_script('return document.documentElement.scrollWidth <= innerWidth'), f'{page} overflow at {width}'
+            nav = driver.find_elements(By.CSS_SELECTOR, '.site-nav a')
+            assert all(link.is_displayed() for link in nav), f'Hidden navigation on {page} at {width}'
+        driver.save_screenshot(f'browser-evidence/knowledge-{width}.png')
+
     severe = []
     for entry in driver.get_log('browser'):
         message = entry.get('message', '')

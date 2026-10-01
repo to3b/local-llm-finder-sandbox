@@ -33,3 +33,10 @@ Expected staging URL after the first successful deployment:
 `https://to3b.github.io/local-llm-finder-sandbox/`
 
 The sandbox is intentionally `noindex` and does not contain the production custom-domain `CNAME`.
+
+## October UI cleanup
+
+The sandbox now includes the UI cleanup and a local Knowledge preview. The build
+runs regression tests before and after transforms, plus desktop/mobile browser
+checks and screenshots. See [PROMOTION.md](PROMOTION.md) for the tested production
+export and release procedure. The live domains are unchanged by sandbox commits.

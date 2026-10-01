@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(process.argv[2] || 'site');
+const basePath = process.env.SITE_BASE || '/local-llm-finder-sandbox/';
+if (!basePath.startsWith('/') || !basePath.endsWith('/')) throw new Error('SITE_BASE must be an absolute directory path.');
 const version = (process.env.GITHUB_SHA || 'sandbox').slice(0, 12);
 
 function read(rel) {
@@ -94,7 +96,7 @@ let app = read('dist/app.js');
 app = replaceRequired(
   app,
   "const url = new URL('/', window.location.origin);",
-  "const url = new URL('/local-llm-finder-sandbox/', window.location.origin);",
+  `const url = new URL(${JSON.stringify(basePath)}, window.location.origin);`,
   'sandbox share URL'
 );
 app = app.replaceAll("'Needs exact GPU'", "'Select your GPU to estimate speed'");
@@ -154,7 +156,7 @@ journeys = journeys.replaceAll('<div class="journey-options">', '<div class="jou
 journeys = journeys.replace('class="journey-option" data-journey="find" aria-pressed="true"', 'class="journey-option" data-journey="find" role="tab" aria-pressed="true" aria-selected="true"');
 journeys = journeys.replace('class="journey-option" data-journey="improve" aria-pressed="false"', 'class="journey-option" data-journey="improve" role="tab" aria-pressed="false" aria-selected="false"');
 journeys = journeys.replace('class="journey-option" data-journey="upgrade" aria-pressed="false"', 'class="journey-option" data-journey="upgrade" role="tab" aria-pressed="false" aria-selected="false"');
-journeys = journeys.replaceAll("new URL('/', location.origin)", "new URL('/local-llm-finder-sandbox/', location.origin)");
+journeys = journeys.replaceAll("new URL('/', location.origin)", `new URL(${JSON.stringify(basePath)}, location.origin)`);
 journeys = journeys.replaceAll("'Needs exact GPU'", "'Select your GPU to estimate speed'");
 journeys = journeys.replaceAll('<dt>Context</dt>', '<dt>Model context limit</dt>');
 journeys = journeys.replace('<span class="results-note">Capacity estimate</span>', '<span class="results-note">Capacity comparison</span>');
@@ -213,4 +215,5 @@ if (!priorityFunction.test(copyTune)) throw new Error('Sandbox transform could n
 copyTune = copyTune.replace(priorityFunction, `${enhancedPriority}\n\nfunction syncSpeedSummary`);
 write('dist/copy-tune.js', copyTune);
 
-console.log('Sandbox build-time UI refinement applied.');
+await import('./apply-cleanup.mjs');
+console.log('Sandbox UI cleanup applied.');
