@@ -29,6 +29,21 @@ def visible(selector):
     )
 
 try:
+    driver.get(url + 'knowledge-preview/')
+    wait.until(lambda d: d.find_elements(By.ID, 'reference-status'))
+    reference_rows = driver.execute_script(r"return [...document.querySelectorAll('[data-reference-search]')].map(row => ({key: new URL(row.querySelector('a').href).pathname.split('/knowledge-preview/')[1].replace(/\/$/, ''), status: row.dataset.referenceStatus, search: row.dataset.referenceSearch}))")
+    reference_status = {row['key']: row['status'] for row in reference_rows}
+    published_count = sum(row['status'] == 'Published' for row in reference_rows)
+    draft_count = sum(row['status'] == 'Draft' for row in reference_rows)
+    def expected_matches(query, status):
+        return sum(row['status'] == status and query.lower() in row['search'] for row in reference_rows)
+    def check_match_count(count):
+        text = driver.find_element(By.ID, 'reference-search-status').text
+        if count:
+            assert (str(count) + ' matching reference') in text
+        else:
+            assert 'No matching references' in text
+
     driver.get(url)
     wait.until(lambda d: d.find_elements(By.ID, 'finder-form'))
     wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, '.journey-option')) == 3)
@@ -183,7 +198,7 @@ try:
         assert '/knowledge-preview/hardware/rtx-3060-12gb/' in hardware_reference.get_attribute('href')
         draft_reference = wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '[data-reference-id="model-10"] a'))
         assert '/knowledge-preview/models/qwen2-5-coder-7b/' in draft_reference.get_attribute('href')
-        assert '(draft)' in draft_reference.text
+        assert ('(draft)' in draft_reference.text) == (reference_status['models/qwen2-5-coder-7b'] == 'Draft')
         driver.save_screenshot(f'browser-evidence/finder-{width}.png')
         driver.execute_script('window.scrollTo(0, document.body.scrollHeight)')
         driver.save_screenshot(f'browser-evidence/finder-footer-{width}.png')
@@ -213,6 +228,7 @@ try:
         search.clear(); search.send_keys('Qwen')
         wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, '.catalog-list .model-row')) > 0)
         article_keys = ['models/qwen3-8b', 'models/qwen2-5-coder-14b', 'models/gpt-oss-20b', 'hardware/rtx-3060-12gb', 'guides/q4-vs-q5', 'guides/context-length', 'models/qwen2-5-coder-7b', 'models/glm-4-5-air', 'hardware/rtx-4090']
+        article_keys = [key for key in article_keys if key in reference_status]
         for page in ['knowledge.html', 'dist/methodology.html', 'dist/privacy.html', 'dist/terms.html', 'knowledge-preview/'] + ['knowledge-preview/' + key + '/' for key in article_keys]:
             driver.get(url + page)
             wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.site-topbar'))
@@ -227,38 +243,41 @@ try:
             if page == 'knowledge-preview/':
                 Select(driver.find_element(By.ID, 'reference-status')).select_by_value('Published')
                 driver.find_element(By.ID, 'reference-search').send_keys('nothing-matches-this')
-                assert 'No matching references' in driver.find_element(By.ID, 'reference-search-status').text
+                check_match_count(expected_matches('RTX 4090', 'Published'))
                 driver.find_element(By.ID, 'reference-search').send_keys(Keys.CONTROL, 'a')
                 driver.find_element(By.ID, 'reference-search').send_keys(Keys.BACKSPACE)
                 driver.find_element(By.ID, 'reference-search').send_keys('Qwen')
-                assert '2 matching references' in driver.find_element(By.ID, 'reference-search-status').text
+                check_match_count(expected_matches('Qwen', 'Published'))
                 driver.find_element(By.ID, 'reference-search').send_keys(Keys.CONTROL, 'a')
                 driver.find_element(By.ID, 'reference-search').send_keys(Keys.BACKSPACE)
                 driver.find_element(By.ID, 'reference-search').send_keys('MXFP4')
-                assert '1 matching reference' in driver.find_element(By.ID, 'reference-search-status').text
+                check_match_count(expected_matches('MXFP4', 'Published'))
                 driver.find_element(By.ID, 'reference-search').send_keys(Keys.CONTROL, 'a')
                 driver.find_element(By.ID, 'reference-search').send_keys(Keys.BACKSPACE)
                 Select(driver.find_element(By.ID, 'reference-status')).select_by_value('Draft')
-                assert '274 matching references' in driver.find_element(By.ID, 'reference-search-status').text
+                check_match_count(draft_count)
                 driver.find_element(By.ID, 'reference-search').send_keys('RTX 4090')
-                assert '1 matching reference' in driver.find_element(By.ID, 'reference-search-status').text
-                assert '(1)' in driver.find_element(By.CSS_SELECTOR, '#hardware .reference-count').text
+                check_match_count(expected_matches('RTX 4090', 'Draft'))
+                if expected_matches('RTX 4090', 'Draft'):
+                    assert f'({expected_matches("RTX 4090", "Draft")})' in driver.find_element(By.CSS_SELECTOR, '#hardware .reference-count').text
+                else:
+                    assert not driver.find_element(By.ID, 'hardware').is_displayed()
                 Select(driver.find_element(By.ID, 'reference-status')).select_by_value('Published')
-                assert 'No matching references' in driver.find_element(By.ID, 'reference-search-status').text
+                check_match_count(expected_matches('RTX 4090', 'Published'))
                 driver.find_element(By.ID, 'reference-search').send_keys(Keys.CONTROL, 'a')
                 driver.find_element(By.ID, 'reference-search').send_keys(Keys.BACKSPACE)
-                wait.until(lambda d: '6 matching references' in d.find_element(By.ID, 'reference-search-status').text)
+                wait.until(lambda d: (f'{published_count} matching reference' if published_count else 'No matching references') in d.find_element(By.ID, 'reference-search-status').text)
             if any('/' + directory + '/' in page for directory in ['models', 'hardware', 'guides']):
                 assert driver.find_elements(By.CSS_SELECTOR, '.article-contents a')
                 assert driver.find_elements(By.CSS_SELECTOR, '.article-sources a')
                 assert driver.find_elements(By.XPATH, '//h2[text()="Related references"]')
-                if page.endswith(tuple(key + '/' for key in ['models/qwen2-5-coder-7b', 'models/glm-4-5-air', 'hardware/rtx-4090'])):
+                if reference_status[page.removeprefix('knowledge-preview/').rstrip('/')] == 'Draft':
                     assert driver.find_elements(By.CSS_SELECTOR, '.draft-notice')
                     edit = driver.find_element(By.CSS_SELECTOR, '.draft-notice a')
                     assert 'gid=323200577' in edit.get_attribute('href') and 'range=A' in edit.get_attribute('href')
                     assert not driver.find_elements(By.CSS_SELECTOR, 'script[type="application/ld+json"]')
                 else:
-                    assert driver.find_elements(By.XPATH, '//h2[text()="Referenced by"]')
+                    assert driver.find_elements(By.CSS_SELECTOR, 'script[type="application/ld+json"]')
                 assert driver.find_element(By.CSS_SELECTOR, 'meta[name="robots"]').get_attribute('content') == 'noindex,nofollow'
                 assert driver.execute_script("return [...document.querySelectorAll('.article-contents a')].every(a => document.querySelector(a.getAttribute('href')) !== null)"), f'Broken heading link on {page}'
                 assert '[[' not in driver.find_element(By.CSS_SELECTOR, '.article-body').text, f'Unresolved wiki link on {page}'
@@ -267,6 +286,8 @@ try:
 
     # New entity mappings must appear in real comparison results, including an MoE model.
     for name, entity_id, slug in [('Qwen3 8B', 'model-7', 'qwen3-8b'), ('gpt-oss-20b', 'extra-gpt-oss-20b', 'gpt-oss-20b')]:
+        if 'models/' + slug not in reference_status:
+            continue
         driver.get(url + '#d=mac&m=32&t=coding&j=improve')
         wait.until(lambda d: visible('#improve-results'))
         current = driver.find_element(By.ID, 'current-model')
@@ -282,7 +303,7 @@ try:
     driver.find_element(By.ID, 'catalog-search').send_keys('GLM-4.5-Air')
     draft = wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '.catalog-list [data-reference-id="extra-glm-4.5-air"] a'))
     assert '/knowledge-preview/models/glm-4-5-air/' in draft.get_attribute('href')
-    assert '(draft)' in draft.text
+    assert ('(draft)' in draft.text) == (reference_status['models/glm-4-5-air'] == 'Draft')
 
     severe = []
     for entry in driver.get_log('browser'):

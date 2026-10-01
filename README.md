@@ -40,3 +40,9 @@ The sandbox now includes the UI cleanup and a local Knowledge preview. The build
 runs regression tests before and after transforms, plus desktop/mobile browser
 checks and screenshots. See [PROMOTION.md](PROMOTION.md) for the tested production
 export and release procedure. The live domains are unchanged by sandbox commits.
+
+## Editable Knowledge drafts
+
+Knowledge previews now build from the same content Sheet as production and refresh at minutes 17 and 47 each hour. The initial catalogue is fully covered by 280 available pages, including 274 drafts. Use the Drafts filter and Edit this draft links to review pages in the Sheet.
+
+The offline content snapshot is retained for reproducibility. The workflow uses a pinned generator and current Sheet rows; Published/Draft status changes are reflected on the next successful build. All sandbox HTML uses noindex/nofollow. Crawlers can read those tags, and no sandbox sitemap is deployed.
