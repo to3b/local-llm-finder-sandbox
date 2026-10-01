@@ -134,3 +134,26 @@ if (fs.existsSync(knowledgeRoot)) {
     return parsed.protocol === 'https:' ? parsed.href : '';`);
  fs.writeFileSync(file, data);
 }
+let restoredApp = read('dist/app.js');
+restoredApp += `
+// Same-document links and browser Back/Forward must restore the shared controls too.
+window.addEventListener('hashchange', () => {
+  form.reset(); gpuInput.value = ''; vramInput.value = '';
+  gpuSearch.hidden = true; gpuSearchToggle.setAttribute('aria-expanded', 'false');
+  gpuSearchToggle.textContent = 'Search by card name';
+  applyUrlState(); syncSecondaryTasks();
+  lastMode = form.elements.device.value;
+  const speedChoice = document.querySelector('#speed-choice');
+  if (speedChoice) {
+    const value = form.elements.speed.value;
+    if (![...speedChoice.options].some(option => option.value === value)) {
+      const option = document.createElement('option'); option.value = value; option.textContent = value + ' tok/s'; speedChoice.append(option);
+    }
+    speedChoice.value = value;
+  }
+  priorityInput.dispatchEvent(new Event('input', {bubbles:true}));
+  const mode = new URLSearchParams(location.hash.slice(1)).get('j') || 'find';
+  document.querySelector('[data-journey="' + (['find','improve','upgrade'].includes(mode) ? mode : 'find') + '"]')?.click();
+});
+`;
+write('dist/app.js', restoredApp);

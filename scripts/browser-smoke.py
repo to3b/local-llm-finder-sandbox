@@ -145,6 +145,7 @@ try:
     # Shared speed floors must survive startup enhancement (previously 10/15 reset to 1).
     driver.get(url + '#d=gpu&g=rtx-3060&t=coding&p=3&c=8&r=32&s=15')
     wait.until(lambda d: d.find_elements(By.ID, 'speed-choice'))
+    wait.until(lambda d: d.find_element(By.ID, 'speed-input').get_attribute('value') == '15')
     assert driver.find_element(By.ID, 'speed-input').get_attribute('value') == '15'
     assert driver.find_element(By.ID, 'speed-choice').get_attribute('value') == '15'
 
