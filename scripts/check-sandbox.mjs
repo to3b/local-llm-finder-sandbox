@@ -28,8 +28,8 @@ for (const [name, html] of [['root', rootHtml], ['dist', distHtml]]) {
 
 assert.ok(app.includes('new URL("/local-llm-finder-sandbox/", window.location.origin)'), 'sandbox share links must stay inside the sandbox');
 assert.ok(app.includes('Top match for your settings'), 'top recommendation copy must be calibrated');
-assert.ok(app.includes('Why this match'), 'top recommendations must explain the ranking in the collapsed card');
-assert.ok(app.includes('ranks highest for ${preferenceLabel} priority'), 'top rationale must connect to the selected speed/quality preference');
+assert.ok(app.includes('Why this match'), 'top recommendations must explain the ranking inside the expanded card');
+assert.ok(app.includes('Ranks highest for your ${preferenceLabel.toLowerCase()} priority.'), 'top rationale must connect to the selected speed/quality preference');
 assert.ok(app.includes('Context used for this estimate'), 'expanded results must expose estimate context');
 assert.ok(app.includes('Model context limit'), 'expanded results must distinguish model context limit');
 assert.ok(app.includes('speedAvailability(hardware)'), 'all result views must use hardware-aware speed copy');

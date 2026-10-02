@@ -81,11 +81,15 @@ try:
     """)
     assert len(set(selected_backgrounds)) == 1, f'Inconsistent selected-control backgrounds: {selected_backgrounds}'
 
-    # The top recommendation should explain itself without requiring expansion.
+    # The shortlist stays brief; opening a recommendation reveals its ranking reason.
     top_reason = wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '#results-content .top-choice .why-top-match'))
+    top_row = driver.find_element(By.CSS_SELECTOR, '#results-content .top-choice')
+    assert 'coding fit' in top_row.find_element(By.CSS_SELECTOR, 'summary').text
+    assert not top_reason.is_displayed()
+    top_row.find_element(By.CSS_SELECTOR, 'summary').click()
     assert 'Why this match' in top_reason.text
-    assert 'coding fit' in top_reason.text
-    assert 'ranks highest for Balanced priority' in top_reason.text
+    assert 'Ranks highest for your balanced priority.' in top_reason.text
+    top_row.find_element(By.CSS_SELECTOR, 'summary').click()
 
     # Advanced and model-filter controls should open without changing the journey or duplicating UI.
     advanced = driver.find_element(By.CSS_SELECTOR, '#advanced-settings > summary')
@@ -145,7 +149,7 @@ try:
     first_row = driver.find_element(By.CSS_SELECTOR, '#results-content .model-row')
     first_row.find_element(By.CSS_SELECTOR, 'summary').click()
     wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '#results-content .model-row').get_attribute('open') is not None)
-    assert 'Context used for this estimate:' in first_row.text
+    assert 'Context used for this estimate' in first_row.text
     assert 'Model context limit' in first_row.text
 
     # Shared links must not escape to the github.io account root in staging.

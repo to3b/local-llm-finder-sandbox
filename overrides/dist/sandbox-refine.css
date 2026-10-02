@@ -443,3 +443,10 @@ body { background-image: none; overflow-x: visible; }
   :root { --control-space: 16px; }
   .results, .results.journey-results { padding-top: var(--section-space); }
 }
+
+/* Expanded result facts share one compact grid; collapsed cards keep the shortlist brief. */
+.model-details > .why-top-match { display: block; margin: 0 0 14px; }
+.model-details > .why-top-match strong { display: block; margin-bottom: 3px; }
+.model-details > .detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 24px; padding: 0; margin: 0 0 16px; }
+.model-details > .detail-grid .detail-label { display: block; margin-bottom: 4px; }
+@media (max-width: 420px) { .model-details > .detail-grid { grid-template-columns: 1fr; gap: 10px; } }

@@ -21,6 +21,14 @@ for(const rel of ['dist/copy-tune.js','dist/journeys.js']){
  s=s.replace('Capability and performance comparisons are planning estimates, not benchmark-grade measurements.','Comparisons use estimates, not measured benchmarks.').replace('Capacity-only simulation: compute, bandwidth, price and real benchmarks still matter.','Memory comparison only; speed and price are not compared.');
  write(rel,s);
 }
+// Result cards show each fact once; ranking rationale lives inside the disclosure.
+let app=read('dist/app.js');
+const replaceCard=(before,after)=>{if(!app.includes(before))throw new Error('Result cleanup source changed: '+before.slice(0,70));app=app.replace(before,after);};
+replaceCard('<span>${fitLabel(quality)} ${taskShortNames[primaryUse]} fit · ${memoryContext} · ranks highest for ${preferenceLabel} priority</span>', '<span>Ranks highest for your ${preferenceLabel.toLowerCase()} priority.</span>');
+replaceCard('${whyTop}</summary>', '</summary>');
+replaceCard('<div class="model-details"><p>${why} ${speedText}</p><p class="estimate-context">Context used for this estimate: ${(Number(form.elements.context.value) * 1000).toLocaleString(\'en-US\')} tokens.</p><div class="detail-grid">', '<div class="model-details">${whyTop}<div class="detail-grid"><div><span class="detail-label">Context used for this estimate</span><strong>${(Number(form.elements.context.value) * 1000).toLocaleString(\'en-US\')} tokens</strong></div>');
+replaceCard('<span>Memory</span><strong>${fmt(requiredGB)} GB</strong>', '<span>Estimated memory</span><strong>${fmt(requiredGB)} GB</strong>');
+write('dist/app.js',app);
 let index=read('knowledge-preview/index.html');
 index=index.replace('Model and hardware references','Knowledge').replace('Requirements, quantization, context and practical hardware guidance. Drafts are available to read while their sources and details are reviewed.','Model requirements, hardware and setup guides. Drafts still need source checks.');
 index=index.replace(/(<li data-reference-status=[\s\S]*?<\/li>)/g,item=>item.replace(/<p>[\s\S]*?<\/p>/,''));
