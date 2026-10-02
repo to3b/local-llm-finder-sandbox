@@ -220,3 +220,35 @@ process.env.KNOWLEDGE_BASE = basePath + 'knowledge-preview/';
 await import('./connect-finder.mjs');
 if(basePath.includes('sandbox')){await import('./connect-community-tests.mjs');await import('./simplify-content.mjs');await import('./align-design.mjs');}
 console.log('Sandbox UI cleanup applied.');
+
+
+// Public navigation stays separate from owner workflows.
+if (basePath.includes('sandbox')) {
+  const resources = `<nav class="knowledge-availability" aria-label="Explore Local LLM Finder"><strong>Explore</strong> · <a href="${basePath}knowledge-preview/#models">Models</a> · <a href="${basePath}knowledge-preview/#hardware">Hardware</a> · <a href="${basePath}knowledge-preview/#guides">Guides</a> · <a href="${basePath}dist/methodology.html">How estimates work</a></nav>`;
+  for (const rel of ['index.html', 'dist/index.html']) {
+    let html = read(rel);
+    if (!html.includes('aria-label="Explore Local LLM Finder"')) {
+      html = replaceRequired(html, '<p class="homepage-trust">', resources + '<p class="homepage-trust">', rel + ' public resources');
+    }
+    write(rel, html);
+  }
+  let publicPages = 0;
+  function protectPublicPages(dir) {
+    for (const entry of fs.readdirSync(dir, {withFileTypes:true})) {
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+      const file = path.join(dir, entry.name);
+      if (entry.isDirectory()) protectPublicPages(file);
+      else if (entry.name.endsWith('.html')) {
+        let html = fs.readFileSync(file, 'utf8');
+        html = html.replace(/<a\b[^>]*href="https:\/\/localllm-tests-sandbox\.to3b\.chatgpt\.site\/review[^"]*"[^>]*>[\s\S]*?<\/a>/g, '');
+        if (/<a\b[^>]*href="[^"]*(?:docs\.google\.com\/spreadsheets|\/review(?:[/?"]|$))[^"]*"/i.test(html)) {
+          throw new Error('Owner link found on a visitor page: ' + path.relative(root,file));
+        }
+        fs.writeFileSync(file, html);
+        publicPages++;
+      }
+    }
+  }
+  protectPublicPages(root);
+  console.log('Public homepage connections added; owner links removed and checked on ' + publicPages + ' pages.');
+}
