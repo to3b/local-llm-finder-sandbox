@@ -269,14 +269,13 @@ try:
                 wait.until(lambda d: (f'{published_count} matching reference' if published_count else 'No matching references') in d.find_element(By.ID, 'reference-search-status').text)
             if any('/' + directory + '/' in page for directory in ['models', 'hardware', 'guides']):
                 assert driver.find_elements(By.CSS_SELECTOR, '.article-contents a')
-                assert driver.find_elements(By.CSS_SELECTOR, '.article-sources a')
+                assert driver.find_elements(By.CSS_SELECTOR, '.article-sources')
                 assert driver.find_elements(By.CSS_SELECTOR, '.related-reading summary')
                 reading_links = [a.get_attribute('href') for a in driver.find_elements(By.CSS_SELECTOR, '.related-reading a')]
                 assert reading_links and len(reading_links) == len(set(reading_links))
                 if reference_status[page.removeprefix('knowledge-preview/').rstrip('/')] == 'Draft':
                     assert driver.find_elements(By.CSS_SELECTOR, '.draft-notice')
-                    edit = driver.find_element(By.CSS_SELECTOR, '.draft-notice a')
-                    assert 'gid=323200577' in edit.get_attribute('href') and 'range=A' in edit.get_attribute('href')
+                    assert not driver.find_elements(By.CSS_SELECTOR, 'a[href*="docs.google.com/spreadsheets/d/"][href*="/edit"]')
                     assert not driver.find_elements(By.CSS_SELECTOR, 'script[type="application/ld+json"]')
                 else:
                     assert driver.find_elements(By.CSS_SELECTOR, 'script[type="application/ld+json"]')

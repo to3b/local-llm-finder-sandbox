@@ -21,7 +21,7 @@ The submission page makes users choose between a form, a separate results destin
 - Finder: one short instruction before controls; remove redundant tier/task copy, shorten conditional hardware and advanced-setting help, consolidate the footer estimate notice. Keep all working modes, controls, error states and result rationale.
 - Knowledge directory: compact, two-column name lists on desktop and a single column on mobile. All 280 links, draft badges, categories, status filters and summary-based search remain.
 - Articles: retain factual content and provenance. Fold the table of contents, sources and editor checklist. Merge incoming/related destinations into one deduplicated “Related reading” list. Fragment links reveal a collapsed destination, including direct links and browser history.
-- Drafts: one explicit source-review notice above catalogue inputs. Remove the repeated summary and opening boilerplate. Keep the exact editing link and draft status.
+- Drafts: one explicit source-review notice above catalogue inputs. Remove the repeated summary and opening boilerplate. Keep draft status. Spreadsheet editing stays outside visitor-facing pages.
 - Methodology: replace repeated framing with three short explanations and a download/buying check. Preserve consequential ranking and speed limitations in accessible disclosures.
 - Test form: remove its sub-navigation and results-page exit after submission. Place an optional prompt section after hardware/model. Show one writing or coding prompt at a time, with an own-task option. Keep repeat-run settings and the automatic helper as secondary disclosures. Copying records the matching prompt version. Imports, saved drafts, failed-submit recovery and backend review are retained.
 

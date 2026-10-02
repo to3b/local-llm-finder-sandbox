@@ -43,7 +43,7 @@ export and release procedure. The live domains are unchanged by sandbox commits.
 
 ## Editable Knowledge drafts
 
-Knowledge previews now build from the same content Sheet as production and refresh at minutes 17 and 47 each hour. The initial catalogue is fully covered by 280 available pages, including 274 drafts. Use the Drafts filter and Edit this draft links to review pages in the Sheet.
+Knowledge previews now build from the same content Sheet as production and refresh at minutes 17 and 47 each hour. The initial catalogue is fully covered by 280 available pages, including 274 drafts. Use the Drafts filter to review pages. Edit content in the owner’s Sheet separately; visitor pages have no spreadsheet editing links. Production builds include Published rows only; the sandbox explicitly opts into Draft rows.
 
 The offline content snapshot is retained for reproducibility. The workflow uses a pinned generator and current Sheet rows; Published/Draft status changes are reflected on the next successful build. All sandbox HTML uses noindex/nofollow. Crawlers can read those tags, and no sandbox sitemap is deployed.
 

@@ -23,7 +23,7 @@ for(const article of data.articles){
   assert.ok(!html.includes('[['),article.key+' must resolve wiki links');
   if(article.status==='Draft'){
     assert.ok(html.includes('Draft reference'),article.key+' needs a review notice');
-    assert.ok(/gid=323200577&amp;range=A\d+:Q\d+/.test(html),article.key+' needs an exact editing link');
+    assert.ok(!html.includes('Edit this draft')&&!/href="https:\/\/docs\.google\.com\/spreadsheets\/d\/[^"]+\/edit/.test(html),article.key+' must not expose spreadsheet editing links');
     assert.ok(!html.includes('application/ld+json'),article.key+' must not claim published Article markup');
   }
 }

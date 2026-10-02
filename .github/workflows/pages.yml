@@ -36,10 +36,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: to3b/local-llm-finder-knowledge
-          ref: 51aa6dbaf6f087de4b99bebbd271476b8238d82a
+          ref: a11cf091d9b2c2cd4298daab8a200dfdd00a7ba2
           path: knowledge
 
-      - name: Build editable Knowledge pages from the content Sheet
+      - name: Build sandbox Knowledge drafts from the content Sheet
+        env:
+          KNOWLEDGE_BUILD_MODE: sandbox
         working-directory: knowledge
         run: node scripts/build-articles.mjs
 
